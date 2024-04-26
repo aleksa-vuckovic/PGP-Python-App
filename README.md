@@ -1,0 +1,1 @@
+This is a team project focusing on implementing the PGP algorithm for data protection. It is being worked on by Aleksa Vučković and Milan Bogićević, both fourth-year students at the Faculty of Electrical Engineering, University of Belgrade.
