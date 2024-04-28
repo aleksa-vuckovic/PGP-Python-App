@@ -6,40 +6,18 @@ Description: Implementation of private and public key rings.
 import json
 import copy
 import time
-import rsa
 import os
-import base64
 from exceptions import DisplayableException
 from Cryptodome.Cipher import AES
 from Cryptodome.Hash import SHA256
+from Cryptodome.PublicKey import RSA
 
 _ID_MOD = 2**64
 
+def drop_keys(dict, keys) -> dict:
+    return {key: value for key, value in dict.items() if key not in keys}
+
 class PrivateKeyData:
-    @staticmethod
-    def _encode_private_key(private: rsa.PrivateKey, password: bytes) -> str:
-        """
-        Returns the encrypted pkcs1 pem string for this private key.
-        Encryption is done using AES in CCM mode.
-        """
-        pem = private._save_pkcs1_pem()
-        password = SHA256.new(password).digest()
-        aes = AES.new(key = password, mode = AES.MODE_CCM, nonce = b'00000000', mac_len=16)
-        encoded, tag = aes.encrypt_and_digest(pem)
-        return base64.b64encode(encoded + tag).decode()
-    @staticmethod
-    def _decode_private_key(encoded: str, password: bytes) -> rsa.PrivateKey:
-        """
-        Decode private key encoded using _encode_private_key.
-        Raises an exception if the password is incorrect.
-        """
-        encoded = base64.b64decode(encoded.encode())
-        encoded, tag = encoded[:-16], encoded[-16:]
-        password = SHA256.new(password).digest()
-        aes = AES.new(key = password, mode = AES.MODE_CCM, nonce = b'00000000', mac_len=16)
-        try: pem = aes.decrypt_and_verify(encoded, tag)
-        except ValueError as v: raise DisplayableException("Incorrect password.") from v
-        return rsa.PrivateKey._load_pkcs1_pem(pem)
 
     def __init__(self, data: dict, ring):
         self._data = data
@@ -64,23 +42,24 @@ class PrivateKeyData:
         del self._ring._keys[self.key_id]
         self._ring._save()
     
-    def decode(self, password: str) -> rsa.PrivateKey:
+    def decode(self, password: str) -> RSA.RsaKey:
         """
         Raises: DisplayableException if the password is incorrect.
-        Returns: The rsa.PrivateKey object.
+        Returns: The RSA.RsaKey object.
         """
-        try: return PrivateKeyData._decode_private_key(self.private_pem, password.encode())
-        except ValueError as v: raise DisplayableException("Incorrect password.") from v
+        try: return RSA.import_key(self.private_pem, password)
+        except Exception as e: raise DisplayableException("Incorrect password.") from e
     
-    def export(self, filepath, password = None):
+    def export(self, filepath, password = None, export_pass = None):
         """
         Exports key to file.
-        If password is None, exports as public key.
-        Otherwise, the password must match the private key.
+        Args:
+            password: If None, key is exported as a public key. Otherwise, this password must match the private key.
+            export_pass: When exporting as private key, the password used to encrypt the exported file (in pkcs#8 format). If None, the file is not encrypted.
         Raises: DisplayableException if password is incorrect (and not None).
         """
-        if password is None: output = self.public.save_pkcs1()
-        else: output = self.decode(password).save_pkcs1()
+        if password is None: output = self.public.export_key("PEM")
+        else: output = self.decode(password).export_key("PEM", passphrase=export_pass, pkcs=8)
         with open(filepath, "w") as file:
             file.write(output.decode())
 
@@ -93,10 +72,9 @@ class PrivateKeyRing:
             key_id: last 64 bits of key modulus, as a hex string
             public_pem: public key as a pem format string
             public: public key as an rsa.PublicKey object, not stored in the json file
-            private_pem: private key as a pem format string - encrypted using the SHA 512 hash of the password
+            private_pem: private key as an encrypted PEM format string (pkcs#8)
 		}
-    The 'private' key can only be converted into an PrivateKey object using the appopriate password,
-    so to get the private key object use get_private_key.
+    The 'private' key can only be converted into an RsaKey object using the appopriate password.
 
     Each user has their own private key ring.
     Use get_instance to get a user's instance, ensuring that only one instance per user is created.
@@ -121,13 +99,11 @@ class PrivateKeyRing:
         except FileNotFoundError: data = "{}"
         self._keys = json.loads(data)
         for key in self._keys.values():
-            key["public"] = rsa.PublicKey._load_pkcs1_pem(key["public_pem"])
+            key["public"] = RSA.import_key(key["public_pem"])
     def _save(self):
-        ring = copy.deepcopy(self._keys)
-        for key in ring.values():
-            del key["public"]
+        keys = {id: drop_keys(key, ["public"]) for id, key in self._keys.items()}
         with open(self._get_file_path(), 'w') as file:
-            json.dump(ring, file)
+            json.dump(keys, file)
 
     def generate_key(self, password:str, size:int) -> PrivateKeyData:
         """
@@ -136,14 +112,15 @@ class PrivateKeyRing:
         """
         if size <= 2048: size = 2048
         else: size = 4092
-        public, private = rsa.newkeys(exponent=65537,nbits=size)
+        private = RSA.generate(bits=size, e=65537)
+        public = private.public_key()
         key_id = hex(private.n % _ID_MOD)
         data = {
             "timestamp": time.time(),
             "key_id": key_id,
             "public": public,
-            "public_pem": public._save_pkcs1_pem().decode(),
-            "private_pem": PrivateKeyData._encode_private_key(private, password.encode())
+            "public_pem": public.export_key("PEM").decode(),
+            "private_pem": private.export_key("PEM", passphrase=password, pkcs=8).decode()
         }
         # if key_id in self._keys ??
         self._keys[key_id] = data
@@ -157,29 +134,30 @@ class PrivateKeyRing:
     def get_key(self, key_id):
         """Returns the key object. Raises exception if it doesn't exist."""
         return PrivateKeyData(self._keys[key_id], self)
-    def import_key(self, filepath_or_string: str, password:str):
+    def import_key(self, filepath_or_string: str, password:str, import_pass: str = None):
         """
         Imports key in pem format. Accepts a filepath or a string containing the private key.
-        Uses password to encrypt the key.
+        Uses password to encrypt the key, and import_pass do decrypt the key file.
         Raises:
             FileNotFoundError:  If file doesn't exist or can't be read.
-            DisplayableException: If password is incorrect.
+            DisplayableException: If password is incorrect, or the key is public.
         Returns: The imported PrivateKetData object.
         """
         if "-----BEGIN" in filepath_or_string: data = filepath_or_string
         else:
             with open(filepath_or_string, "r") as file:
                 data = file.read()
-        try: private = rsa.PrivateKey._load_pkcs1_pem(data)
+        try: private = RSA.import_key(data, import_pass)
         except ValueError as v: raise DisplayableException("Couldn't read the key. Please check the format - only PKCS#1 is accepted.") from v
-        public = rsa.PublicKey(private.n, private.e)
+        if not private.has_private(): raise DisplayableException("Only public key info was found in the file.")
+        public = private.public_key()
         key_id = hex(private.n % _ID_MOD)
         key = {
             "timestamp": time.time(),
             "key_id": key_id,
             "public": public,
-            "public_pem": public._save_pkcs1_pem().decode(),
-            "private_pem": PrivateKeyData._encode_private_key(private, password.encode())
+            "public_pem": public.export_key("PEM").decode(),
+            "private_pem": private.export_key("PEM", passphrase=password, pkcs=8).decode()
         }
         self._keys[key_id] = key
         self._save()
@@ -237,7 +215,7 @@ class PublicKeyRing:
             trust_score: sum of trust values for each signature
             signatures: a list of emails,
 		}
-    The 'public_pem' field is converted into a PublicKey object when loaded from the file, and stored in the 'public' attribute.
+    The 'public_pem' field is converted into an RsaKey object when loaded from the file, and stored in the 'public' attribute.
     For simplicity, the owner_trust value is stored redundantly in each entry of an owner.
     
     Each user has their own public key ring.
@@ -263,11 +241,9 @@ class PublicKeyRing:
         except FileNotFoundError: data = "{}"
         self._keys = json.loads(data)
         for key in self._keys.values():
-            key["public"] = rsa.PublicKey._load_pkcs1_pem(key["public_pem"])
+            key["public"] = RSA.import_key(key["public_pem"])
     def _save(self):
-        keys = copy.deepcopy(self._keys)
-        for key in keys.values():
-            del key["public"]
+        keys = {id: drop_keys(key, ["public"]) for id, key in self._keys.items()}
         with open(self._get_file_path(), 'w') as file:
             json.dump(keys, file)
     
@@ -300,7 +276,7 @@ class PublicKeyRing:
         Adds new public key.
         If owner_trust is None, than the existing owner_trust value is used, or 0 if no entries exists.
         Args:
-            value(str): The file path or string containing the pem public key in PKCS#1 format.
+            value(str): The file path or string containing the public key in pem format.
         Raises:
             FileNotFoundError: If the file can't be read or doesn't contain a valid public key.
             DisplayableError: If the key format is incorrect.
@@ -310,7 +286,7 @@ class PublicKeyRing:
         else:
             with open(value, "r") as file:
                 data = file.read()
-        try: public = rsa.PublicKey.load_pkcs1(data.encode())
+        try: public = RSA.import_key(data)
         except ValueError as e: raise DisplayableException("Couldn't load the key. Check the file path or contents.") from e
         if owner_trust is None: owner_trust = self.get_owner_trust(email)
         else: self.set_owner_trust(email, owner_trust)

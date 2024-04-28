@@ -48,8 +48,8 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 96,
-											"top": -48,
+											"left": -64,
+											"top": -64,
 											"height": 13
 										},
 										{
@@ -59,9 +59,9 @@
 												"$ref": "AAAAAAGPIMtxtxp6JW8="
 											},
 											"font": "Arial;13;1",
-											"left": 349,
-											"top": 87,
-											"width": 341,
+											"left": 269,
+											"top": 79,
+											"width": 438,
 											"height": 13,
 											"text": "PrivateKeyRing"
 										},
@@ -73,8 +73,8 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 96,
-											"top": -48,
+											"left": -64,
+											"top": -64,
 											"width": 72,
 											"height": 13,
 											"text": "(from Model)"
@@ -87,16 +87,16 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 96,
-											"top": -48,
+											"left": -64,
+											"top": -64,
 											"height": 13,
 											"horizontalAlignment": 1
 										}
 									],
 									"font": "Arial;13;0",
-									"left": 344,
-									"top": 80,
-									"width": 351,
+									"left": 264,
+									"top": 72,
+									"width": 448,
 									"height": 25,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGPIMtxtxp7CIo="
@@ -121,9 +121,9 @@
 										"$ref": "AAAAAAGPIMtxtRp3Kqs="
 									},
 									"font": "Arial;13;0",
-									"left": 344,
-									"top": 105,
-									"width": 351,
+									"left": 264,
+									"top": 97,
+									"width": 448,
 									"height": 10
 								},
 								{
@@ -146,9 +146,9 @@
 												"$ref": "AAAAAAGPIMzzdBqs92E="
 											},
 											"font": "Arial;13;0",
-											"left": 349,
-											"top": 120,
-											"width": 341,
+											"left": 269,
+											"top": 112,
+											"width": 438,
 											"height": 13,
 											"underline": true,
 											"text": "+get_instance(username): PrivateKeyRing",
@@ -164,9 +164,9 @@
 												"$ref": "AAAAAAGPIM1znhq2l/g="
 											},
 											"font": "Arial;13;0",
-											"left": 349,
-											"top": 135,
-											"width": 341,
+											"left": 269,
+											"top": 127,
+											"width": 438,
 											"height": 13,
 											"text": "+generate_key(password, size): PrivateKeyData",
 											"horizontalAlignment": 0
@@ -181,9 +181,9 @@
 												"$ref": "AAAAAAGPIM47whrFAo0="
 											},
 											"font": "Arial;13;0",
-											"left": 349,
-											"top": 150,
-											"width": 341,
+											"left": 269,
+											"top": 142,
+											"width": 438,
 											"height": 13,
 											"text": "+get_all()",
 											"horizontalAlignment": 0
@@ -198,9 +198,9 @@
 												"$ref": "AAAAAAGPINBWrhrV+9k="
 											},
 											"font": "Arial;13;0",
-											"left": 349,
-											"top": 165,
-											"width": 341,
+											"left": 269,
+											"top": 157,
+											"width": 438,
 											"height": 13,
 											"text": "+get_key(key_id): PrivateKeyData",
 											"horizontalAlignment": 0
@@ -215,18 +215,18 @@
 												"$ref": "AAAAAAGPINIXxxrsfQM="
 											},
 											"font": "Arial;13;0",
-											"left": 349,
-											"top": 180,
-											"width": 341,
+											"left": 269,
+											"top": 172,
+											"width": 438,
 											"height": 13,
-											"text": "+import_key(file_or_string, password): PrivateKeyData",
+											"text": "+import_key(file_or_string, password, import_pass = None): PrivateKeyData",
 											"horizontalAlignment": 0
 										}
 									],
 									"font": "Arial;13;0",
-									"left": 344,
-									"top": 115,
-									"width": 351,
+									"left": 264,
+									"top": 107,
+									"width": 448,
 									"height": 83
 								},
 								{
@@ -240,8 +240,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 48,
-									"top": -24,
+									"left": -32,
+									"top": -32,
 									"width": 10,
 									"height": 10
 								},
@@ -256,17 +256,17 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 48,
-									"top": -24,
+									"left": -32,
+									"top": -32,
 									"width": 10,
 									"height": 10
 								}
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 344,
-							"top": 80,
-							"width": 351,
+							"left": 264,
+							"top": 72,
+							"width": 448,
 							"height": 129,
 							"nameCompartment": {
 								"$ref": "AAAAAAGPIMtxtxp6JW8="
@@ -623,7 +623,7 @@
 											"font": "Arial;13;1",
 											"left": 925,
 											"top": 63,
-											"width": 205,
+											"width": 331,
 											"height": 13,
 											"text": "PrivateKeyData"
 										},
@@ -658,7 +658,7 @@
 									"font": "Arial;13;0",
 									"left": 920,
 									"top": 56,
-									"width": 215,
+									"width": 341,
 									"height": 25,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGPIN+F2Bu0Zu8="
@@ -695,7 +695,7 @@
 											"font": "Arial;13;0",
 											"left": 925,
 											"top": 86,
-											"width": 205,
+											"width": 331,
 											"height": 13,
 											"text": "+timestamp: float",
 											"horizontalAlignment": 0
@@ -712,7 +712,7 @@
 											"font": "Arial;13;0",
 											"left": 925,
 											"top": 101,
-											"width": 205,
+											"width": 331,
 											"height": 13,
 											"text": "+key_id: string",
 											"horizontalAlignment": 0
@@ -729,7 +729,7 @@
 											"font": "Arial;13;0",
 											"left": 925,
 											"top": 116,
-											"width": 205,
+											"width": 331,
 											"height": 13,
 											"text": "+public_pem: string",
 											"horizontalAlignment": 0
@@ -746,9 +746,9 @@
 											"font": "Arial;13;0",
 											"left": 925,
 											"top": 131,
-											"width": 205,
+											"width": 331,
 											"height": 13,
-											"text": "+public: rsa.PublicKey",
+											"text": "+public: RSA.RsaKey",
 											"horizontalAlignment": 0
 										},
 										{
@@ -763,7 +763,7 @@
 											"font": "Arial;13;0",
 											"left": 925,
 											"top": 146,
-											"width": 205,
+											"width": 331,
 											"height": 13,
 											"text": "+private_pem: string",
 											"horizontalAlignment": 0
@@ -772,7 +772,7 @@
 									"font": "Arial;13;0",
 									"left": 920,
 									"top": 81,
-									"width": 215,
+									"width": 341,
 									"height": 83
 								},
 								{
@@ -797,7 +797,7 @@
 											"font": "Arial;13;0",
 											"left": 925,
 											"top": 169,
-											"width": 205,
+											"width": 331,
 											"height": 13,
 											"text": "+delete()",
 											"horizontalAlignment": 0
@@ -814,9 +814,9 @@
 											"font": "Arial;13;0",
 											"left": 925,
 											"top": 184,
-											"width": 205,
+											"width": 331,
 											"height": 13,
-											"text": "+decode(password): rsa.PrivateKey",
+											"text": "+decode(password): RSA.RsaKey",
 											"horizontalAlignment": 0
 										},
 										{
@@ -831,16 +831,16 @@
 											"font": "Arial;13;0",
 											"left": 925,
 											"top": 199,
-											"width": 205,
+											"width": 331,
 											"height": 13,
-											"text": "+export(filepath, password = None)",
+											"text": "+export(filepath, password  = None, export_pass = None)",
 											"horizontalAlignment": 0
 										}
 									],
 									"font": "Arial;13;0",
 									"left": 920,
 									"top": 164,
-									"width": 215,
+									"width": 341,
 									"height": 53
 								},
 								{
@@ -880,7 +880,7 @@
 							"containerChangeable": true,
 							"left": 920,
 							"top": 56,
-							"width": 215,
+							"width": 341,
 							"height": 161,
 							"nameCompartment": {
 								"$ref": "AAAAAAGPIN+F2Buztqo="
@@ -1064,7 +1064,7 @@
 											"top": 347,
 											"width": 141,
 											"height": 13,
-											"text": "+public: rsa.PublicKey",
+											"text": "+public: RSA.RsaKey",
 											"horizontalAlignment": 0
 										},
 										{
@@ -1320,8 +1320,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 807,
-									"top": 147,
+									"left": 814,
+									"top": 145,
 									"height": 13,
 									"alpha": 1.5707963267948966,
 									"distance": 15,
@@ -1341,8 +1341,8 @@
 									},
 									"visible": null,
 									"font": "Arial;13;0",
-									"left": 807,
-									"top": 162,
+									"left": 814,
+									"top": 160,
 									"height": 13,
 									"alpha": 1.5707963267948966,
 									"distance": 30,
@@ -1362,8 +1362,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 806,
-									"top": 118,
+									"left": 815,
+									"top": 115,
 									"height": 13,
 									"alpha": -1.5707963267948966,
 									"distance": 15,
@@ -1384,7 +1384,7 @@
 									"visible": false,
 									"font": "Arial;13;0",
 									"left": 893,
-									"top": 147,
+									"top": 144,
 									"height": 13,
 									"alpha": 0.5235987755982988,
 									"distance": 30,
@@ -1404,8 +1404,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 891,
-									"top": 160,
+									"left": 890,
+									"top": 158,
 									"height": 13,
 									"alpha": 0.7853981633974483,
 									"distance": 40,
@@ -1426,7 +1426,7 @@
 									"visible": false,
 									"font": "Arial;13;0",
 									"left": 897,
-									"top": 119,
+									"top": 117,
 									"height": 13,
 									"alpha": -0.5235987755982988,
 									"distance": 25,
@@ -1446,8 +1446,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 721,
-									"top": 149,
+									"left": 737,
+									"top": 144,
 									"height": 13,
 									"alpha": -0.5235987755982988,
 									"distance": 30,
@@ -1466,8 +1466,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 723,
-									"top": 162,
+									"left": 740,
+									"top": 158,
 									"height": 13,
 									"alpha": -0.7853981633974483,
 									"distance": 40,
@@ -1486,8 +1486,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 716,
-									"top": 122,
+									"left": 733,
+									"top": 117,
 									"height": 13,
 									"alpha": 0.5235987755982988,
 									"distance": 25,
@@ -1532,7 +1532,7 @@
 								"$ref": "AAAAAAGPIN+F2BuyV4M="
 							},
 							"lineStyle": 1,
-							"points": "919:138;695:141",
+							"points": "919:136;712:136",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAGPIUmIVB1ojnI="
@@ -1864,7 +1864,8 @@
 									"_parent": {
 										"$ref": "AAAAAAGPIMzzdBqs92E="
 									},
-									"name": "username"
+									"name": "username",
+									"type": ""
 								},
 								{
 									"_type": "UMLParameter",
@@ -1893,7 +1894,8 @@
 									"_parent": {
 										"$ref": "AAAAAAGPIM1znhq2l/g="
 									},
-									"name": "password"
+									"name": "password",
+									"type": ""
 								},
 								{
 									"_type": "UMLParameter",
@@ -1901,7 +1903,8 @@
 									"_parent": {
 										"$ref": "AAAAAAGPIM1znhq2l/g="
 									},
-									"name": "size"
+									"name": "size",
+									"type": ""
 								},
 								{
 									"_type": "UMLParameter",
@@ -1938,7 +1941,8 @@
 									"_parent": {
 										"$ref": "AAAAAAGPINBWrhrV+9k="
 									},
-									"name": "key_id"
+									"name": "key_id",
+									"type": ""
 								},
 								{
 									"_type": "UMLParameter",
@@ -1987,6 +1991,16 @@
 										"$ref": "AAAAAAGPIN+F2BuwBNA="
 									},
 									"direction": "return"
+								},
+								{
+									"_type": "UMLParameter",
+									"_id": "AAAAAAGPJlWs9rgpNmQ=",
+									"_parent": {
+										"$ref": "AAAAAAGPINIXxxrsfQM="
+									},
+									"name": "import_pass",
+									"type": "",
+									"defaultValue": "None"
 								}
 							]
 						}
@@ -2101,7 +2115,8 @@
 									"_parent": {
 										"$ref": "AAAAAAGPINeblRtiJks="
 									},
-									"name": "file_or_string"
+									"name": "file_or_string",
+									"type": ""
 								},
 								{
 									"_type": "UMLParameter",
@@ -2109,7 +2124,8 @@
 									"_parent": {
 										"$ref": "AAAAAAGPINeblRtiJks="
 									},
-									"name": "name"
+									"name": "name",
+									"type": ""
 								},
 								{
 									"_type": "UMLParameter",
@@ -2117,7 +2133,8 @@
 									"_parent": {
 										"$ref": "AAAAAAGPINeblRtiJks="
 									},
-									"name": "email"
+									"name": "email",
+									"type": ""
 								},
 								{
 									"_type": "UMLParameter",
@@ -2126,6 +2143,7 @@
 										"$ref": "AAAAAAGPINeblRtiJks="
 									},
 									"name": "owner_trust ",
+									"type": "",
 									"defaultValue": "None"
 								},
 								{
@@ -2135,6 +2153,7 @@
 										"$ref": "AAAAAAGPINeblRtiJks="
 									},
 									"name": "signatures ",
+									"type": "",
 									"defaultValue": "[]"
 								},
 								{
@@ -2270,7 +2289,7 @@
 								"$ref": "AAAAAAGPIN+F2BuwBNA="
 							},
 							"name": "public",
-							"type": "rsa.PublicKey"
+							"type": "RSA.RsaKey"
 						},
 						{
 							"_type": "UMLAttribute",
@@ -2305,8 +2324,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGPIUTulRxMspU="
 									},
-									"name": "password",
-									"type": ""
+									"name": "password"
 								},
 								{
 									"_type": "UMLParameter",
@@ -2314,7 +2332,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGPIUTulRxMspU="
 									},
-									"type": "rsa.PrivateKey",
+									"type": "RSA.RsaKey",
 									"direction": "return"
 								}
 							]
@@ -2333,8 +2351,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGPIUUcixxX2y4="
 									},
-									"name": "filepath",
-									"type": ""
+									"name": "filepath"
 								},
 								{
 									"_type": "UMLParameter",
@@ -2342,7 +2359,16 @@
 									"_parent": {
 										"$ref": "AAAAAAGPIUUcixxX2y4="
 									},
-									"name": "password",
+									"name": "password ",
+									"defaultValue": "None"
+								},
+								{
+									"_type": "UMLParameter",
+									"_id": "AAAAAAGPJlX+9rllwVs=",
+									"_parent": {
+										"$ref": "AAAAAAGPIUUcixxX2y4="
+									},
+									"name": "export_pass",
 									"type": "",
 									"defaultValue": "None"
 								}
@@ -2394,7 +2420,8 @@
 							"_parent": {
 								"$ref": "AAAAAAGPIOFBvRwArUM="
 							},
-							"name": "timestamp"
+							"name": "timestamp",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -2421,7 +2448,7 @@
 								"$ref": "AAAAAAGPIOFBvRwArUM="
 							},
 							"name": "public",
-							"type": "rsa.PublicKey"
+							"type": "RSA.RsaKey"
 						},
 						{
 							"_type": "UMLAttribute",

@@ -1,54 +1,58 @@
 import unittest
 import shutil
 from keys import PrivateKeyRing, PublicKeyRing
-import rsa
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Cipher import PKCS1_OAEP
 import os
 from exceptions import *
 
 
-private_pem = """-----BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEAwuzm0MXHd3GBlbywDY9SJYqcu6a5GbhHzXtuWoilwXUwQehP
-HbGyMbm/X2bFZuet/uaEDIWNoz8cYz2G089ahy/qXNujlTMomccFWEGLh+Tt8e2E
-o3VFcXOLcwT0/olYmoP1CtEGKTuUz1LEWQe5GGU9lRZyaEhoHqnRZv7Q7rPgqFFW
-Gb/lNkaBJOWBFwY9QsCMk10a4n4z3lGakpsUygnDBL4i7SQJo32xFljJpAw1JKob
-8YFgp3n2QgugJHNjQ+TFTJSCWCYSBNml1EuQPg0yyRM0OiaAoBove4YqdDahJqt1
-3tumKUBJ1LGzyzGKBy+/9E5xEvhBW1UrXHDWcQIDAQABAoIBABS9Wg2qjX+S7yO8
-cMrwjd/6sJRyt80Zw2IEmQg+88vyqRDKI+jX6ErMJaWD7Mr3KZcudaxTZW+SHnYc
-rMTKkipCGeCJag1M5Sv/df0e9DagUATmra8qohnhHlw9kcenW2sNUTw2Yz5t3XZ1
-qviCDtqeov/C5Kdd1N42WVZpFFfhUfU22zGpqzLmNu8kI8pGmR/qBnwa01EOhb1I
-z6FcF68F6GbTqQFDLMZrbKdazNobp60Vpfrr5qSKndR7JCv+aqvI6CEpO9eIN+4Y
-wX7v7IaSr+9He2sKeo3elOGXgB6R/2ALMHxPUpQ7psw3kABn3FHqHC8LE+qMCv+x
-ij/mdLECgYEA88jzuyX56cavsK/PZZrPezCfDE1o25YYgbuhCvsp+E38QfRl5DOS
-8W1eYEwlmFjEA6eola5LHNv8ueSc5A2A9c12oHO1CcyM4w4sszTFiuKgxL4bD+jT
-YDGRisb7FOsXXwbdD/Grng4/7WBEsLKbSK3AxNB/mooGKl3yiDD50m0CgYEAzLE5
-ZChHLjBtcd8cY0fYy3NXavmUX8HPuwbzfe0j5vPmKz0PFQWOYF4PDIxlMCjKM7zD
-u+qEhCxdie+f+spg8jWlsaOgLXBkTLntUhaa7ixGtPlCITbujD7D3uOYa+s3DOOK
-F6w2bH7HawjhT5tv79rLYlWnl+ErKJXC5qs8sZUCgYB3ABXxugT3V9R1RCzSJTK4
-qLBKuhLAddE6qtNe3+HJ4o+LxnhiX8aP8VpLWYBUkKgGPLYvcqgZy0zflTf8npbf
-5c7NXg32XZI8V7P8OntfY2clAsOFDZr47tljy+POfz+mVFxepxKmEcCk6AQ/2L+y
-R5a8vCY90rhVwAxe7MFWNQKBgQCL0wRBRsJY6vvYLXBW4V1WnRO6H4MbZmlgeP8b
-pkJAIZu5LZx/36vCaH4fNEhq/XIipW+PjkO3hhbfgrDlwBk5Wyw0jHF+mKfrQZa7
-3HU4/UXPmfVyevO5GabzOsWD8slIJKbQRPNoabIPi6Fdn/B3CB6mrZwuQ8IXlzXs
-HEz5gQKBgQDcRMbKZuZvJVKtfesX9fNJymawr5ZvGtN5KRBnW7qPnwm1mqcO6lVF
-YlLDE3GSuqq/YQwHYwWiaVOTZu09fT64oM8vA9tegUVbDNAF8Zg5KwHfFYSP5pIg
-9Yl89kh2cbsrEWsRtS783gRHh2Hf8cowStNBp/GGxwzPpCCw3yWAvw==
------END RSA PRIVATE KEY-----"""
-public_pem = """-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAwuzm0MXHd3GBlbywDY9SJYqcu6a5GbhHzXtuWoilwXUwQehPHbGy
-Mbm/X2bFZuet/uaEDIWNoz8cYz2G089ahy/qXNujlTMomccFWEGLh+Tt8e2Eo3VF
-cXOLcwT0/olYmoP1CtEGKTuUz1LEWQe5GGU9lRZyaEhoHqnRZv7Q7rPgqFFWGb/l
-NkaBJOWBFwY9QsCMk10a4n4z3lGakpsUygnDBL4i7SQJo32xFljJpAw1JKob8YFg
-p3n2QgugJHNjQ+TFTJSCWCYSBNml1EuQPg0yyRM0OiaAoBove4YqdDahJqt13tum
-KUBJ1LGzyzGKBy+/9E5xEvhBW1UrXHDWcQIDAQAB
------END RSA PUBLIC KEY-----"""
-public_pem2 = """-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAytdMINlJduGQG2CZAx27v2ert18iJINoAOcVw1moHNJm96+70YK3
-okSBZJ3YEbsQk4spBh7MjN1AFS6W9yTmPhUwHmjEKeHSseVMdJTq2SaX3LrRiFkE
-Ke2eC9y9nyfLD7hveKR329RRnzY0s4Zhy2tN2GDrRa5VRBvY+mKaeDlWSR0qvhCO
-tok4HrB8jsYiD2a75bghKHg0UlLk/OhusK6YktvDH5U9NVXFoMSytSA8rJCnTK+r
-UjrxWLDs5w4S14ppeb15JdFuhylAA7LzcMHgw6zZs8yd2e4DodCSBqD9w5RS47X4
-fYDP7px8Hqltowu3DYryBqpU3uIHcESoXwIDAQAB
------END RSA PUBLIC KEY-----"""
+private_pem = """-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCCXpHNE7/snIil
+HbknKVTzBgKSiwBkuSzANYNGxNqwBzjmoXkW8B2K7BEJh1tz8ibkX/tUCtNGJ92z
+hvj6PUgwgDdrOArbcqfz4YW9SChCl0HnXBD0PpEujRex0vF1ufAerZ1Q/OdOK+8+
+CMN1XzEGXcEsMIhh1WyqDxmnA69Ty9A5pnmDwXM+wjWT+t282PYQ8vD6lvPH26rl
+PxcfnMnu/vzlM/ImNdMQYQE8vZxnoOIhbM1wjzDY/rVFBpbVuac51PomPMmJYUAK
+iCFIdovgPGdZsCMEN8bXD6/pGtGuNi84vudl5VknEnF31uOTn4bVepd3crkVoElh
+zFhDMnotAgMBAAECggEAHdd65WgLayRrrOwQWVP/M3/hL90skmHGyhqVuanO6zNE
+BZrZpnQBNy8ROU6oEvLPj0AfPh4aPXlbqMARFurXLu7ygJL7/T6SDmPFos21FYUd
+G1H6OYZm4jJ+xYAlME8HFWalV4gEhGLPKTKFV0UaajwkvzI+zbI2ZPj+5LmVtQbj
+OL1bZPvBWNUi2ka9q5Po2tGv2M3aNFl0bhxr3AoytY8pgd02pBa2T9N48McEP78x
+nTn8TXCoJ7bYvx5mhYekZgL39WOxcMR+UOOnPm+W0o+JMweJ7ltC9xeYmHsAeYm5
+o0uXZVG0oT89bQSjQ56KosTlKKAKNoZNNe6EXui+qwKBgQC2zxGscwGAt36BdBD5
+nrxlA60Dk3VcgaJWGBguQOgVf8fD9nQvIO0O4cAE/HgDFMy2T5OSGehj2I8xETrn
+qR5AK7+pfFIPGdZjroIiaenKTpHQwbZtghPs13aT0gO5GS7iYTSCSdlAuRaZnm5u
+ffsss6McLK6IsGN0X/x13brwvwKBgQC2kLy2tFuIES8LFtVfEuGo1iTjAqzH9zo/
+fHIfvAU2irWlos5lGTXIhBgGpdw9SahIT5/IODMokOHGiM+OPXS1gACvHuc1DoDv
+ouc71RcUjaiUJMqaFAZtE0XfRyS7UBu3I6V7eYcBtVw0vxnvySbRYHg3u0Wyolal
+t1HSAbhkEwKBgDlbwUzdjOQpLt1JYKYh4zTCsX+Evfc3iYr/5l5k6S0Nuc1Hv+6l
+oxvfQ1ONL86vsQem8kOOM3dYlJ0trdDQJHi4AVwZcNniHn2KXLSVjNB4VJIupaG4
+ha3zcPYymA5001weac5Tg4ImUOwEZNvwVWYSOyR09JJY3eu+zkThPG2bAoGAbF8Y
+lsATQX8p1MRWHpy/tZCAzvzMgdtBCWSe/jWHRqwqTcuKBzti0MeQ14lnZj4uFdam
+O50YyTDPxSF7S60xdXgpb8rBZp5YbWffKYZBsCKy+lWoqrPOaLszE+pQZJyWBy2y
+0sv+F0aIGIuEIvHeCBXi5vpU0khJdQ+QE0CQK18CgYEAiNYsMF5CRoHQjFIfEv3t
+DP6fR9G5lMSrKtkiLt3ZQmHe027dNb5K1FiiNl/VfOEuIqoY2fIwLGsVxaq+tysf
+rGqCTRN0GRb1lvK3z4BRqazrqNng+SzNWwclqphdtt6PlTYCHPpJI7LJgrweoe9Z
+dYX71JNHCdoSsu8cLvuNBHA=
+-----END PRIVATE KEY-----"""
+public_pem = """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgl6RzRO/7JyIpR25JylU
+8wYCkosAZLkswDWDRsTasAc45qF5FvAdiuwRCYdbc/Im5F/7VArTRifds4b4+j1I
+MIA3azgK23Kn8+GFvUgoQpdB51wQ9D6RLo0XsdLxdbnwHq2dUPznTivvPgjDdV8x
+Bl3BLDCIYdVsqg8ZpwOvU8vQOaZ5g8FzPsI1k/rdvNj2EPLw+pbzx9uq5T8XH5zJ
+7v785TPyJjXTEGEBPL2cZ6DiIWzNcI8w2P61RQaW1bmnOdT6JjzJiWFACoghSHaL
+4DxnWbAjBDfG1w+v6RrRrjYvOL7nZeVZJxJxd9bjk5+G1XqXd3K5FaBJYcxYQzJ6
+LQIDAQAB
+-----END PUBLIC KEY-----"""
+public_pem2 = """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvODYgeN+3vFWFP+B2xYN
+K8QpPB6+hHqacLhJPqoQ5aPRH75Uc4o9VynbgytLrn7l9XBKcPRGAZaF2g975dhK
+hNWfo0+yemOKXrGhPS4uZbiplOvEkMSYbIjKKVTGxDKjNsQGPvzNW8i7TxUEP3EK
+XTNKrxBRiiGkj69YZUiHFrUAzRdXeJ7PvyHPpsrKQokWrEuQxxHa+NoZ8Pn1kFSI
+y9ZU+ptZ/dfXbXzAob0HwdIsYARAFxpFAk2dBPApPZfwXng0w3N8AT+Kam8tKJnZ
+5XzIQxq/ylYLhRUHtu/8v+amNETSe8nh4SeNrPXz9Caj065LiwfQjkEihgPHsIPW
+MQIDAQAB
+-----END PUBLIC KEY-----"""
 
 
 username = "aleksa"
@@ -77,8 +81,8 @@ class KeysTest(unittest.TestCase):
         public = key.public
 
         msg = b"Hello"
-        enc = rsa.encrypt(msg, public)
-        dec = rsa.decrypt(enc, private)
+        enc = PKCS1_OAEP.new(public).encrypt(msg)
+        dec = PKCS1_OAEP.new(private).decrypt(enc)
         self.assertTrue(msg == dec)
 
         with self.assertRaises(DisplayableException):
@@ -90,8 +94,8 @@ class KeysTest(unittest.TestCase):
         private = key.decode(password)
         public = key.public
         msg = b"Hello"
-        enc = rsa.encrypt(msg, public)
-        dec = rsa.decrypt(enc, private)
+        enc = PKCS1_OAEP.new(public).encrypt(msg)
+        dec = PKCS1_OAEP.new(private).decrypt(enc)
         self.assertTrue(msg == dec)
 
         filepath = testfiles[0]
