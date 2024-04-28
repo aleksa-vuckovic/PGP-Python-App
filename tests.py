@@ -55,19 +55,18 @@ MQIDAQAB
 -----END PUBLIC KEY-----"""
 
 
-username = "aleksa"
 password = "mypass"
+name = "aleksa"
+email = "aleksa@gmail.com"
 testfiles = ["test.txt"]
 class KeysTest(unittest.TestCase):
-    def _reset_files(self, username):
-        shutil.rmtree(f"data/{username}", ignore_errors=True)
 
     def setUp(self) -> None:
-        self._reset_files(username)
-        PublicKeyRing._instances = dict()
-        PrivateKeyRing._instances = dict()
+        shutil.rmtree(f"data", ignore_errors=True)
+        PublicKeyRing._instance = None
+        PrivateKeyRing._instance = None
     def tearDown(self) -> None:
-        self._reset_files(username)
+        shutil.rmtree(f"data", ignore_errors=True)
         PublicKeyRing._instances = dict()
         PrivateKeyRing._instances = dict()
         for file in testfiles:
@@ -75,8 +74,10 @@ class KeysTest(unittest.TestCase):
                 os.unlink(file)
 
     def test_private_key_encryption(self):
-        ring: PrivateKeyRing = PrivateKeyRing.get_instance(username)
-        key = ring.generate_key(password, 2048)
+        ring: PrivateKeyRing = PrivateKeyRing.get_instance()
+        key = ring.generate_key(password, 2048, name, email)
+        self.assertTrue(key.name == name)
+        self.assertTrue(key.email == email)
         private = key.decode(password)
         public = key.public
 
@@ -89,8 +90,8 @@ class KeysTest(unittest.TestCase):
             key.decode("badpass")
     
     def test_private_key_import_export(self):
-        ring: PrivateKeyRing = PrivateKeyRing.get_instance(username)
-        key = ring.import_key(private_pem, password)
+        ring: PrivateKeyRing = PrivateKeyRing.get_instance()
+        key = ring.import_key(private_pem, password, name, email)
         private = key.decode(password)
         public = key.public
         msg = b"Hello"
@@ -108,7 +109,7 @@ class KeysTest(unittest.TestCase):
             self.assertTrue(file.read().strip() == public_pem)
     
     def test_public_key_import_export(self):
-        ring: PublicKeyRing = PublicKeyRing.get_instance(username)
+        ring: PublicKeyRing = PublicKeyRing.get_instance()
         key = ring.add_key(public_pem, "jane", "jane@gmail.com", 50, [])
         self.assertTrue(65537 == key.public.e)
 
@@ -119,18 +120,18 @@ class KeysTest(unittest.TestCase):
 
 
     def test_file_consistency(self):
-        ring: PrivateKeyRing = PrivateKeyRing.get_instance(username)
-        ring.generate_key(password, 2048)
-        ring2: PrivateKeyRing = PrivateKeyRing(username)
+        ring: PrivateKeyRing = PrivateKeyRing.get_instance()
+        ring.generate_key(password, 2048, name, email)
+        ring2: PrivateKeyRing = PrivateKeyRing()
         self.assertTrue(ring.get_all() == ring2.get_all())
 
-        ring: PublicKeyRing = PublicKeyRing.get_instance(username)
+        ring: PublicKeyRing = PublicKeyRing.get_instance()
         ring.add_key(public_pem, "Jane", "jean@gmail.com", 50, [])
-        ring2: PublicKeyRing = PublicKeyRing(username)
+        ring2: PublicKeyRing = PublicKeyRing()
         self.assertTrue(ring.get_all() == ring2.get_all())
 
     def test_public_key_trust(self):
-        ring: PublicKeyRing = PublicKeyRing.get_instance(username)
+        ring: PublicKeyRing = PublicKeyRing.get_instance()
         user1 = "jane@gmail.com"
         user2 = "tom@gmail.com"
         janeKey = ring.add_key(public_pem, "Jane", user1, 50, [])
@@ -146,7 +147,7 @@ class KeysTest(unittest.TestCase):
 
         janeKey.add_signature("tom@gmail.com")
         self.assertTrue(janeKey.trust_score == 40)
-        janeKey.add_signature(username)
+        janeKey.sign()
         self.assertTrue(janeKey.trust_score == 140)
         self.assertTrue(janeKey.legitimacy == True)
 

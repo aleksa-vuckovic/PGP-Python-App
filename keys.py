@@ -73,26 +73,26 @@ class PrivateKeyRing:
             public_pem: public key as a pem format string
             public: public key as an rsa.PublicKey object, not stored in the json file
             private_pem: private key as an encrypted PEM format string (pkcs#8)
+            name: name
+            email: email
 		}
     The 'private' key can only be converted into an RsaKey object using the appopriate password.
 
-    Each user has their own private key ring.
     Use get_instance to get a user's instance, ensuring that only one instance per user is created.
     """
-    _instances = dict()
+    _instance = None
     @staticmethod
-    def get_instance(username):
-        instances = PrivateKeyRing._instances
-        if username not in instances: instances[username] = PrivateKeyRing(username)
-        return instances[username]
+    def get_instance():
+        if PrivateKeyRing._instance is None:
+            PrivateKeyRing._instance = PrivateKeyRing()
+        return PrivateKeyRing._instance
     
     def _get_file_path(self):
-        path = f"data/{self.username}/private.json"
+        path = f"data/private.json"
         os.makedirs(os.path.dirname(path), exist_ok=True)
         return path
 
-    def __init__(self, username):
-        self.username = username
+    def __init__(self):
         try:
             with open(self._get_file_path(), "r") as file:
                 data = file.read()
@@ -105,7 +105,7 @@ class PrivateKeyRing:
         with open(self._get_file_path(), 'w') as file:
             json.dump(keys, file)
 
-    def generate_key(self, password:str, size:int) -> PrivateKeyData:
+    def generate_key(self, password:str, size:int, name: str, email: str) -> PrivateKeyData:
         """
         Generates a new key, adds it to the ring.
         Returns: The generated PrivateKeyData object.
@@ -120,7 +120,9 @@ class PrivateKeyRing:
             "key_id": key_id,
             "public": public,
             "public_pem": public.export_key("PEM").decode(),
-            "private_pem": private.export_key("PEM", passphrase=password, pkcs=8).decode()
+            "private_pem": private.export_key("PEM", passphrase=password, pkcs=8).decode(),
+            "name": name,
+            "email": email
         }
         # if key_id in self._keys ??
         self._keys[key_id] = data
@@ -134,7 +136,7 @@ class PrivateKeyRing:
     def get_key(self, key_id):
         """Returns the key object. Raises exception if it doesn't exist."""
         return PrivateKeyData(self._keys[key_id], self)
-    def import_key(self, filepath_or_string: str, password:str, import_pass: str = None):
+    def import_key(self, filepath_or_string: str, password:str, name: str, email: str, import_pass: str = None):
         """
         Imports key in pem format. Accepts a filepath or a string containing the private key.
         Uses password to encrypt the key, and import_pass do decrypt the key file.
@@ -157,7 +159,9 @@ class PrivateKeyRing:
             "key_id": key_id,
             "public": public,
             "public_pem": public.export_key("PEM").decode(),
-            "private_pem": private.export_key("PEM", passphrase=password, pkcs=8).decode()
+            "private_pem": private.export_key("PEM", passphrase=password, pkcs=8).decode(),
+            "name": name,
+            "email": email
         }
         self._keys[key_id] = key
         self._save()
@@ -197,7 +201,9 @@ class PublicKeyData:
         self.signatures.append(email)
         self._ring._update_trust_score(self._data)
         self._ring._save()
-
+    def sign(self):
+        """Marks the key as valid."""
+        self.add_signature(PublicKeyRing._SELF_SIGN)
 
 class PublicKeyRing:
     """
@@ -218,23 +224,21 @@ class PublicKeyRing:
     The 'public_pem' field is converted into an RsaKey object when loaded from the file, and stored in the 'public' attribute.
     For simplicity, the owner_trust value is stored redundantly in each entry of an owner.
     
-    Each user has their own public key ring.
-    Use get_instance to get a user's instance, ensuring that only one instance per user is created.
+    Use get_instance to obtain ring, ensuring that only one instance is created.
     """
-    _instances = dict()
+    _SELF_SIGN = "*"
+    _instance = None
     @staticmethod
-    def get_instance(username: str):
-        instances = PublicKeyRing._instances
-        if username not in instances: instances[username] = PublicKeyRing(username)
-        return instances[username]
+    def get_instance():
+        if PublicKeyRing._instance is None: PublicKeyRing._instance = PublicKeyRing()
+        return PublicKeyRing._instance
     
     def _get_file_path(self):
-        path = f"data/{self.username}/public.json"
+        path = f"data/public.json"
         os.makedirs(os.path.dirname(path), exist_ok=True)
         return path
 
-    def __init__(self, username):
-        self.username = username
+    def __init__(self):
         try:
             with open(self._get_file_path(), "r") as file:
                 data = file.read()
@@ -248,7 +252,7 @@ class PublicKeyRing:
             json.dump(keys, file)
     
     def get_owner_trust(self, email: str) -> int:
-        if email == self.username: return 100
+        if email == PublicKeyRing._SELF_SIGN: return 100
         for key in self._keys.values():
             if key["email"] == email: return key["owner_trust"]
         return 0
