@@ -142,7 +142,7 @@ class PrivateKeyRing:
         Uses password to encrypt the key, and import_pass do decrypt the key file.
         Raises:
             FileNotFoundError:  If file doesn't exist or can't be read.
-            DisplayableException: If password is incorrect, or the key is public.
+            DisplayableException: If password is incorrect, or the key is public, or there is a key id conflict.
         Returns: The imported PrivateKetData object.
         """
         if "-----BEGIN" in filepath_or_string: data = filepath_or_string
@@ -163,6 +163,7 @@ class PrivateKeyRing:
             "name": name,
             "email": email
         }
+        if key_id in self._keys: raise DisplayableException("Key ID conflict!")
         self._keys[key_id] = key
         self._save()
         return PrivateKeyData(key, self)
@@ -283,7 +284,7 @@ class PublicKeyRing:
             value(str): The file path or string containing the public key in pem format.
         Raises:
             FileNotFoundError: If the file can't be read or doesn't contain a valid public key.
-            DisplayableError: If the key format is incorrect.
+            DisplayableError: If the key format is incorrect, or there is a key_id conflict.
         Returns: The key object.
         """
         if "-----BEGIN" in value: data = value
@@ -307,6 +308,7 @@ class PublicKeyRing:
             "trust_score": 0,
             "signatures": signatures
         }
+        if key_id in self._keys: raise DisplayableException("There is a key ID conflict!")
         self._keys[key_id] = key
         self._update_trust_score(key)
         self._save()
