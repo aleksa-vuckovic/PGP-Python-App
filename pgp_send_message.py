@@ -15,8 +15,9 @@ from Cryptodome.Random import get_random_bytes
 from Cryptodome.Signature import pkcs1_15
 from Cryptodome.Util.Padding import pad
 
-from variables import *
+from keys import PrivateKeyRing, PrivateKeyData
 
+from pprint import pprint
 
 def send_pgp_message_module_init():
     # pgp_sending_message_init (must be after createing window)
@@ -66,6 +67,7 @@ def send_pgp_message_module_init():
         return passphrase_hash #Return the printable digest of the message that has been hashed so far.
 
     def authentication_passphrase_dialog(MouseClicked):
+        global passphrase
         passphrase = askstring("Input", "Input an passphrase:")
         passphrase_hash = sha1_hash_for_password(passphrase)
 
@@ -81,17 +83,17 @@ def send_pgp_message_module_init():
         if algoritham=="AES": #AES
             Ks = get_random_bytes(16)#size=16
             c=AES.new(Ks,AES.MODE_CFB)
-            e=c.encrypt(
+            enc=c.encrypt(
                 pad(bytearray(str(message).encode('utf-8')),AES.MODE_CFB)
             )
-            return e,(Ks,c.iv)
+            return enc,(Ks,c.iv)
         else:#TripleDES
             Ks=get_random_bytes(24) #size=24
             c=DES3.new(Ks,DES3.MODE_CFB)
-            e=c.encrypt(
+            enc=c.encrypt(
                 pad(bytearray(str(message).encode('utf-8')),DES3.block_size)
             )
-            return e,(Ks,Ks,c.iv)
+            return enc,(Ks,c.iv)
 
     def encryption_of_Ks(PUb):
         rsa_encr=PKCS1_OAEP.new(PUb)
@@ -107,9 +109,10 @@ def send_pgp_message_module_init():
             messagebox.showinfo("Info","Choose correct directory!")
             return
         #extracting neccesary atriutes from gui comp.
-        PRa,PUb,enc_algo,zip_f,radix64_f,text=None,None,None,False,False,None
+        PUa_mod,PUb,enc_algo,zip_f,radix64_f,text=None,None,None,False,False,None
+
         if authentication_flag.get()==1:
-            PRa=int(authentication_private_key_id.get())
+            PUa_mod=authentication_private_key_id.get()
         if zip_flag.get()==1:
             zip_f=True
         if encryption_flag.get()==1:
@@ -119,33 +122,39 @@ def send_pgp_message_module_init():
             radix64_f=True
         text=text_area.get("1.0","end-1c")
 
-        print(PRa,PUb,enc_algo,zip_f,radix64_f)
+        print(PUa_mod,PUb,enc_algo,zip_f,radix64_f)
         print(text)
         print(choosen_directory)
         #wrapping message
-        message={}
-        message["message"]={
+
+        message={
             "msg":text,
-            "timestamp":datetime.datetime.now(),
-            "file":choosen_directory,
+            "timestamp":str(datetime.datetime.now()),
+            "file":choosen_directory
         }
 
         print(message)
         if authentication_flag.get()==1:
             auth={}
             hash=SHA1.new(str(text).encode('utf-8'))
-            #message["authentication"]=True
-            print(PRa,hash)
-            auth_signature = pkcs1_15.new(PRa).sign(hash)  # Create the PKCS1 v1.5 signature of a message.
+
+            privateRing:PrivateKeyRing=PrivateKeyRing.get_instance()
+            print(PUa_mod)
+            privateData:PrivateKeyData=privateRing.get_key(PUa_mod) #id is PUa%2^64
+            rsa=None
+            try:
+                rsa=privateData.decode(passphrase)
+            except Exception:
+                messagebox.showinfo("Info","Error wrong password!")
+                return
+
+            auth_signature = pkcs1_15.new(rsa).sign(hash)  # Create the PKCS1 v1.5 signature of a message.
             print(auth_signature)
-            auth["message"]=message
+            auth["msg"]=message
             auth["signature"]=auth_signature
-            auth["pua_mod"]=1 #should add PUa%pow(2,64)
+            auth["pua_mod"]=PUa_mod #should add PUa%pow(2,64)
             message=auth
-
-        #else:
-        #    message["authentication"] = False
-
+            pprint(message)
         if zip_f:
             zip={}
             zip["zip"]=zlib.compress(str(message).encode('utf-8'))
@@ -153,7 +162,7 @@ def send_pgp_message_module_init():
 
         if encryption_flag.get()==1:
             encr={}
-            encrypted_message,params=encrtyption_of_message(message,enc_algo)
+            encrypted_message,params=encrtyption_of_message(message,enc_algo)#cipher,(Ks,IV)
 
             encr["message"]=encrypted_message
             encr["pub_mod"]=1 #this should be changed to pub%pow(2,64)
@@ -166,11 +175,13 @@ def send_pgp_message_module_init():
 
         if radix64_f:
             radix={}
-            message["message"]=radix64_encription(message)
+            radix["radix"]=radix64_encription(message)
+            message=radix
 
         with open(choosen_directory,"w") as file:
             print(str(message))
             file.write(str(message))
+
         return
 
 
@@ -201,9 +212,6 @@ def send_pgp_message_module_init():
 
 
 
-
-
-
     #sending message frame
     sending_message_frame=creation_of_sending_message_frame()
 
@@ -222,8 +230,12 @@ def send_pgp_message_module_init():
     authentication_label_private_key=tkinter.Label(sending_message_frame,text="Private key:",state="disabled",font=("Arial",16))
     authentication_label_private_key.place(x=300,y=50)
 
+    private_ring_ids=[key for key in PrivateKeyRing.get_instance().get_all().keys()]
+
+    #print(private_ring_ids)
+
     #here i should use private key id list, when it is made
-    authentication_private_key_id_list=ttk.Combobox(sending_message_frame,textvariable=authentication_private_key_id,values=["123","456","789"],state="disabled")
+    authentication_private_key_id_list=ttk.Combobox(sending_message_frame,textvariable=authentication_private_key_id,values=private_ring_ids,state="disabled")
     authentication_private_key_id_list.place(x=550,y=50)
     authentication_private_key_id_list.bind("<<ComboboxSelected>>", authentication_passphrase_dialog)
 
@@ -238,6 +250,7 @@ def send_pgp_message_module_init():
     encryption_label_users=tkinter.Label(sending_message_frame,text="Public key:",font=("Arial",16),state="disabled")
     encryption_label_users.place(x=300,y=100)
 
+    #public_ring_ids=[key for key in PublicKeyRing.get_instance().get_all().keys()] - this will be added later
     encryption_public_key_id_list=ttk.Combobox(sending_message_frame,textvariable=encryption_public_key_id,values=["123","456","789"],state="disabled")
     encryption_public_key_id_list.place(x=550,y=100)
 
@@ -259,7 +272,7 @@ def send_pgp_message_module_init():
     radic_checkbox.place(x=200,y=200)
 
 
-    #text that will be ciphered
+    #text - that will be ciphered
     text_label=tkinter.Label(sending_message_frame,text="Text:",font=("Arial",16))
     text_label.place(x=10,y=300)
 

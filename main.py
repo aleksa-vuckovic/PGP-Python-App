@@ -1,13 +1,10 @@
 import tkinter
 from tkinter import ttk
 from pgp_send_message import send_pgp_message_module_init
-from pgp_receive_message import receive_message_frame
-from variables import *
+from pgp_receive_message import receive_message_frame_module_init
+
 
 print("Hello".encode())
-
-
-
 
 
 
@@ -20,7 +17,7 @@ notebook = ttk.Notebook(window)
 
 
 sending_message_frame=send_pgp_message_module_init()
-receiving_message_frame=receive_message_frame()
+receiving_message_frame=receive_message_frame_module_init()
 
 
 notebook.add(sending_message_frame,text="Sending Messages")
