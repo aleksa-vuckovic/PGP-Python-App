@@ -1,35 +1,34 @@
 import tkinter as tk
 from keys import PublicKeyRing, PrivateKeyRing, PublicKeyData, PrivateKeyData
 import datetime
-
+from tkinter import filedialog
+from tkinter import messagebox
+from Cryptodome.PublicKey import RSA
+from exceptions import DisplayableException
 def clear(frame: tk.Frame | tk.Tk):
     for child in frame.winfo_children():
         child.destroy()
 
+class ScrollableFrame(tk.Frame):
+    def __init__(self, container):
+        super().__init__(container)
+        self._canvas = tk.Canvas(self, highlightthickness=0)
+        self._scrollbar = tk.Scrollbar(self, orient="vertical", command=self._canvas.yview)
+        self.scrollable_frame = tk.Frame(self._canvas)
+        self.scrollable_frame.bind("<Configure>", self.on_frame_configure)
+        self._canvas.bind("<Configure>", self.on_canvas_configure)
 
-class HomeScreen(tk.Frame):
-
-    def __init__(
-            self,
-            master: tk.Misc,
-            on_private_ring,
-            on_public_ring,
-            on_send,
-            on_receive
-    ):
-        super().__init__(master)
-
-        private = tk.Button(self, text = "Private keys", command=on_private_ring)
-        private.grid(row = 0, column = 0, padx = 10, pady = 10)
-
-        public = tk.Button(self, text = "Public keys", command=on_public_ring)
-        public.grid(row = 0, column = 1, padx = 10, pady = 10)
-
-        send = tk.Button(self, text = "Send message", command=on_send)
-        send.grid(row = 1, column = 0, padx = 10, pady = 10)
-
-        receive = tk.Button(self, text = "Receive message", command=on_receive)
-        receive.grid(row = 1, column = 1, padx = 10, pady = 10)
+        self._canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", tags="tag")
+        self._canvas.configure(yscrollcommand=self._scrollbar.set)
+        self._scrollbar.pack(side="right", fill="y")
+        self._canvas.pack(side="left", fill="both", expand=True)
+    def get_frame(self) -> tk.Frame:
+        return self.scrollable_frame
+    def on_frame_configure(self, event):
+        self._canvas.configure(scrollregion=self._canvas.bbox("all"))
+        self._canvas.itemconfig("tag", width=event.width)
+    def on_canvas_configure(self, event):
+        self._canvas.itemconfig("tag", width=event.width)
 
 class ScrollBar(tk.Frame):
     def __init__(self, master, on_up, on_down, **kwds):
@@ -149,6 +148,11 @@ class ScrollTable(tk.Frame):
         self.a += 1
         self.update()
 
+class Title(tk.Label):
+    def __init__(self, master, text):
+        super().__init__(master, text = text, justify="center", anchor="w", font=("Helvetica", 14, "bold"))
+        self.grid(row = 0, column = 0, sticky = "NSEW", padx=20, pady=10)
+
 """
 1. Table
 2. Import, Generate
@@ -156,7 +160,7 @@ class ScrollTable(tk.Frame):
     -Public: n, e, export
     -Private: p, q, d, export
 """
-class PrivateKeyScreen(tk.Frame):
+class PrivateRingScreen(tk.Frame):
 
     def __init__(self, master: tk.Misc, ring: PrivateKeyRing, on_details, on_import, on_generate):
         """
@@ -170,16 +174,9 @@ class PrivateKeyScreen(tk.Frame):
         self.on_import = on_import
         self.on_generate = on_generate
 
-        """
-        Public key ring
-        x   table   x
-        Import Generate
-        """
-
-        title = tk.Label(self, text = "Private key ring", justify="center", anchor="w", font=("Helvetica", 14, "bold"))
-        title.grid(row = 0, column = 0, sticky = "NSEW", padx=20, pady=10)
-
-        self.table = ScrollTable(self, visible_rows=5, headers=["Timestamp", "Key ID", "Public exp", "Name", "Email", ""])
+        title = Title(self, "Private Key Ring")
+        
+        self.table = ScrollTable(self, visible_rows=8, headers=["Timestamp", "Key ID", "Public exp", "Name", "Email", ""])
         self.table.grid(row = 1, column = 0, padx=10, pady=10)
 
         commands = tk.Frame(self)
@@ -216,3 +213,315 @@ class PrivateKeyScreen(tk.Frame):
         raise Exception("Unexpected j value.")
         
 
+"""
+1. File or string
+2. Name
+3. Email
+4. Import password?
+5. Save password
+"""
+class ImportPrivateScreen(tk.Frame):
+    def __init__(self, master: tk.Misc, on_import):
+        """
+        Args:
+            on_import: A callback method which takes the pem text, name,
+                email, import password and save password as arguments.
+        """
+        super().__init__(master)
+        self.on_import = on_import
+        Title(self, "Import Private Key")
+
+        self.file = tk.BooleanVar(value = True)
+        selection = tk.Frame(self)
+        file = tk.Radiobutton(selection, text = "Import from PEM file", variable=self.file, value=True, command=self._refresh)
+        textbox = tk.Radiobutton(selection, text = "Enter the text in PEM format", variable=self.file, value=False, command=self._refresh)
+        file.grid(row=0, column=0, padx=20, pady=10)
+        textbox.grid(row=0, column=1, padx=20, pady=10)
+        selection.grid(row = 1, column = 0)
+        self.file.set(True)
+        
+        input = tk.Frame(self)
+        self.selected_file = tk.Entry(input)
+        self.select_file_button = tk.Button(input, text = "Select File", command=lambda:self._select_file(filedialog.askopenfilename()))
+        self.text_input = tk.Text(input, width=50, height=10)
+        tk.Label(input, text="Name:").grid(row = 1, column = 0, pady=10)
+        self.name_input = tk.Entry(input)
+        self.name_input.grid(row = 1, column=1)
+        tk.Label(input, text="Email:").grid(row = 2, column = 0, pady=10)
+        self.email_input = tk.Entry(input)
+        self.email_input.grid(row = 2, column=1)
+        tk.Label(input, text="If the key is encrypted, enter the password here:", wraplength=150).grid(row = 3, column = 0, pady=10, padx=10)
+        self.import_password = tk.Entry(input, show="*")
+        self.import_password.grid(row = 3, column=1)
+        tk.Label(input, text="Your private key password:", wraplength=150).grid(row=4, column=0,pady=10)
+        self.save_password = tk.Entry(input, show = "*")
+        self.save_password.grid(row=4,column=1)
+        tk.Button(self, text="Import", command=self._import).grid(row=5,column=0,pady=10)
+        input.grid(row=2, column=0)
+        self._refresh()
+
+
+    def _select_file(self, value):
+        self.selected_file.delete(0, tk.END)
+        self.selected_file.insert(0, value)
+    
+    def _refresh(self):
+        if self.file.get():
+            self.selected_file.grid(row = 0, column = 1, pady=10)
+            self.select_file_button.grid(row = 0, column = 0)
+            self.text_input.grid_forget()
+        else:
+            self.selected_file.grid_forget()
+            self.select_file_button.grid_forget()
+            self.text_input.grid(row = 0, column = 0, columnspan=2, pady=5)
+
+    def _import(self):
+        if self.file.get():
+            try:
+                with open(self.selected_file.get()) as file:
+                    data = file.read()
+            except:
+                messagebox.showerror("Error", "Couldn't open file. Check the file path or access permission.")
+                return
+        else: data = self.text_input.get()
+        self.on_import(data, self.name_input.get(), self.email_input.get(), self.import_password.get(), self.save_password.get())
+
+    
+"""
+Size
+Name
+Email
+Password
+"""
+class GenerateScreen(tk.Frame):
+    def __init__(self, master: tk.Misc, on_generate):
+        """
+        Args:
+            on_generate: A callback method which takes the password, size, name, and email as arguments.
+        """
+        super().__init__(master)
+        self.on_generate = on_generate
+        Title(self, "Generate New Key Pair")
+
+        self.big = tk.BooleanVar(value = False)
+        selection = tk.Frame(self)
+        small = tk.Radiobutton(selection, text = "2048 bit", variable=self.big, value=False)
+        big = tk.Radiobutton(selection, text = "4096 bit", variable=self.big, value=True)
+        small.grid(row=0, column=0, padx=20, pady=10)
+        big.grid(row=0, column=1, padx=20, pady=10)
+        selection.grid(row = 1, column = 0)
+        self.big.set(True)
+
+        input = tk.Frame(self)
+        tk.Label(input, text="Name:").grid(row = 1, column = 0, pady=10)
+        self.name_input = tk.Entry(input)
+        self.name_input.grid(row = 1, column=1)
+        tk.Label(input, text="Email:").grid(row = 2, column = 0, pady=10)
+        self.email_input = tk.Entry(input)
+        self.email_input.grid(row = 2, column=1)
+        tk.Label(input, text="Password:").grid(row=4, column=0,pady=10)
+        self.password = tk.Entry(input, show = "*")
+        self.password.grid(row=4,column=1)
+        tk.Button(self, text="Generate", command=self.generate).grid(row=5,column=0,pady=10)
+        input.grid(row=2, column=0)
+    def generate(self):
+        size = 4096 if self.big.get() else 2048
+        name = self.name_input.get()
+        email = self.email_input.get()
+        password = self.password.get()
+        self.on_generate(password, size, name, email)
+
+def big_num_representation(num):
+    return hex(num)
+
+
+class TextInput(tk.Entry):
+    def __init__(self, master: tk.Misc, placeholder: str, show: str):
+        super().__init__(master)
+        self.placeholder = placeholder
+        self.show = show
+        self.bind('<FocusIn>', self._on_in)
+        self.bind('<FocusOut>', self._on_out)
+        self._on_out(None)
+    def _on_in(self, event):
+        if self.get() == self.placeholder:
+            self.delete(0, tk.END)
+            self.config(fg='black', show=self.show)
+    def _on_out(self, event):
+        if self.get() == '':
+            self.insert(0, self.placeholder)
+            self.config(fg='grey', show = None)
+
+"""
+    -Public: n, e, export
+    -Private: p, q, d, export
+"""
+class PublicKeyDetailsScreen(tk.Frame):
+    def __init__(self, master, key: RSA.RsaKey, on_export):
+        """
+        Arg:
+            on_export: A callback method with no args.
+        """
+        super().__init__(master)
+        Title(self, "Public Key Details")
+
+        data = tk.Frame(self)
+        tk.Label(data, text="Modulus (n):").grid(row = 0, column = 0)
+        tk.Label(data, text = big_num_representation(key.n), width=70, wraplength=400, bg="white").grid(row = 0, column = 1, pady=10)
+        tk.Label(data, text = "Public exponent (e):").grid(row = 1, column = 0)
+        tk.Label(data, text= str(key.e)).grid(row = 1, column = 1, pady=10)
+        tk.Button(data, text = "Export public key", command=on_export).grid(row = 2 ,column = 0, columnspan=2, pady=10)
+        data.grid(row = 1, column=0)
+
+        self._decrypt_frame = tk.Frame(data)
+        self.password  = TextInput(self._decrypt_frame, placeholder="Enter password",show="*")
+        self.password.grid(row = 0, column = 0)
+        tk.Button(self._decrypt_frame, text="Decrypt", command=lambda: None if self.on_decrypt is None else self.on_decrypt(self.password.get())).grid(row = 0, column = 1)
+        self._delete = tk.Button(data, text="Delete key", command=lambda: None if self.on_delete is None else self.on_delete())
+        self.set_on_decrypt(None)
+        self.set_on_delete(None)
+    
+    def set_on_decrypt(self, on_decrypt):
+        self.on_decrypt = on_decrypt
+        if on_decrypt is None: self._decrypt_frame.grid_forget()
+        else: self._decrypt_frame.grid(row = 4, column = 0, columnspan=2, pady=20)
+    def set_on_delete(self, on_delete):
+        self.on_delete = on_delete
+        if on_delete is None: self._delete.grid_forget()
+        else: self._delete.grid(row = 5, column = 0, columnspan=2, pady=10)
+    
+    def _decrypt(self):
+        if self.on_decrypt is not None: self.on_decrypt(self.password.get())
+
+"""
+    -Private: p, q, d, export
+"""
+class PrivateKeyDetailsScreen(tk.Frame):
+    def __init__(self, master: tk.Misc, key: RSA.RsaKey, on_export):
+        """
+        Args:
+            on_export: A callback which takes the export password as the only argument.
+        """
+        super().__init__(master)
+        Title(self, "Private Key Details")
+        self.on_export = on_export
+
+        data = tk.Frame(self)
+        tk.Label(data, text="Prime 1 (p):").grid(row = 0, column = 0)
+        tk.Label(data, text = big_num_representation(key.p), width=70, wraplength=400, bg="white").grid(row = 0, column = 1, pady=10)
+        tk.Label(data, text = "Prime 2 (q):").grid(row = 1, column = 0)
+        tk.Label(data, text= big_num_representation(key.q), width=70, wraplength=400, bg="white").grid(row = 1, column = 1, pady=10)
+        tk.Label(data, text = "Private exponent (d):").grid(row = 2, column = 0)
+        tk.Label(data, text= big_num_representation(key.q), width=70, wraplength=400, bg="white").grid(row = 2, column = 1, pady=10)
+        data.grid(row = 1, column = 0)
+
+        export_frame = tk.Frame(data)
+        self._use_pass = tk.BooleanVar(export_frame)
+        tk.Checkbutton(export_frame, text="Use password", command=self._change_use_pass, variable=self._use_pass).grid(row = 0, column = 0)
+        self._password  = TextInput(export_frame, placeholder="Export password", show="*")
+        self._password.grid(row = 0, column = 1)
+        tk.Button(export_frame, text="Export private key", command=self._export).grid(row = 0, column = 2)
+        export_frame.grid(row = 3, column=0, padx = 20, pady=10, columnspan=2)
+        self._change_use_pass()
+    
+    def _change_use_pass(self):
+        use = self._use_pass.get()
+        if use: self._password.config(state="normal")
+        else: self._password.config(state="disabled")
+
+    def _export(self):
+        if self._use_pass.get(): password = self._password.get()
+        else: password = None
+        self.on_export(password)
+
+class NavigationHost(tk.Frame):
+    def __init__(self, master: tk.Misc):
+        super().__init__(master)
+        self._destinations = []
+        self._back = tk.Button(self, text="Back", command=self.back)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+    
+    def navigate(self, destination: tk.Frame, sticky="NSEW"):
+        if len(self._destinations) > 0:
+            self._destinations[-1].grid_forget()
+            self._back.grid(row = 0, column = 0, sticky="W")
+            destination.grid(row = 1, column = 0, padx=10, pady=5, sticky=sticky)
+        else:
+            destination.grid(row = 0, column = 0, padx=10, pady=5, sticky=sticky)
+        self._destinations.append(destination)
+    
+    def back(self):
+        if len(self._destinations) == 1: return
+        self._destinations[-1].destroy()
+        self._destinations = self._destinations[:-1]
+        if len(self._destinations) == 1:
+            self._back.grid_forget()
+            self._destinations[-1].grid(row = 0, column = 0, padx=10, pady=5)
+        else:
+            self._destinations[-1].grid(row = 1, column = 0, padx=10, pady=5)
+    
+    def cur_destination(self):
+        return self._destinations[-1]
+        
+class PrivateKeysScreen(NavigationHost):
+    def __init__(self, master):
+        super().__init__(master)
+        self._ring = PrivateKeyRing.get_instance()
+        self._home = PrivateRingScreen(self, self._ring, self._on_details, self._on_import, self._on_generate)
+        self.navigate(self._home)
+
+    def _on_details(self, key: PrivateKeyData):
+        self._key = key
+        frame = ScrollableFrame(self)
+        self._pub = PublicKeyDetailsScreen(frame.get_frame(), key.public, self._on_export_public)
+        self._pub.grid(row = 0, column = 0)
+        self._pub.set_on_decrypt(self._on_decrypt)
+        self.navigate(frame, sticky="NSEW")
+        
+    def _on_import(self):
+        def import_key(pem, name, email, import_pass, save_pass):
+            try:
+                self._ring.import_key(pem, save_pass, name, email, import_pass)
+                messagebox.showinfo("Success", "Key was successfully imported.")
+                self._home.refresh()
+                self.back()
+            except DisplayableException as e:
+                messagebox.showerror("Error", str(e))
+        self.navigate(ImportPrivateScreen(self, import_key))
+
+    def _on_generate(self):
+        def generate(password, size, name, email):
+            self._ring.generate_key(password, size, name, email)
+            messagebox.showinfo("Success", "A new private key was generated.")
+            self._home.refresh()
+            self.back()
+        self.navigate(GenerateScreen(self, generate))
+
+    def _on_export_public(self):
+        file = filedialog.asksaveasfilename()
+        if not file: return
+        self._key.export(file)
+    
+    def _on_decrypt(self, password):
+        try:
+            key = self._key.decode(password)
+            self._password = password
+            self._pub.set_on_decrypt(None)
+            self._pub.set_on_delete(self._on_delete)
+            PrivateKeyDetailsScreen(self.cur_destination().get_frame(), key, self._on_export_private).grid(row = 1, column = 0)
+        except DisplayableException as e:
+            messagebox.showerror("Error", "Incorrect password!")
+    
+    def _on_delete(self):
+        self._key.delete()
+        messagebox.showinfo("Success", "The key was successfully deleted.")
+        self._key = None
+        self._home.refresh()
+        self.back()
+    
+    def _on_export_private(self, password):
+        file = filedialog.asksaveasfilename()
+        if not file: return
+        self._key.export(file, self._password, password)
+        

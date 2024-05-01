@@ -26,7 +26,7 @@ class PrivateKeyData:
     def __getattr__(self, name):
         if name in self._data:
             return self._data[name]
-        return super().__getattr__(name)
+        return self.name
     def __getitem__(self, index):
         if isinstance(index, str): return self.__getattr__(index)
         raise Exception
@@ -71,7 +71,7 @@ class PrivateKeyRing:
             timestamp: epoch seconds time when the key was added to this ring
             key_id: last 64 bits of key modulus, as a hex string
             public_pem: public key as a pem format string
-            public: public key as an rsa.PublicKey object, not stored in the json file
+            public: public key as an RSA.RsaKey object, not stored in the json file
             private_pem: private key as an encrypted PEM format string (pkcs#8)
             name: name
             email: email
@@ -150,7 +150,7 @@ class PrivateKeyRing:
             with open(filepath_or_string, "r") as file:
                 data = file.read()
         try: private = RSA.import_key(data, import_pass)
-        except ValueError as v: raise DisplayableException("Couldn't read the key. Please check the format - only PKCS#1 is accepted.") from v
+        except ValueError as v: raise DisplayableException("Couldn't read the key. Please check the format and password.") from v
         if not private.has_private(): raise DisplayableException("Only public key info was found in the file.")
         public = private.public_key()
         key_id = hex(private.n % _ID_MOD)
