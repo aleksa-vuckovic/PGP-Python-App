@@ -148,9 +148,10 @@ class ScrollTable(tk.Frame):
         self.update()
 
 class Title(tk.Label):
-    def __init__(self, master, text):
-        super().__init__(master, text = text, justify="center", anchor="w", font=("Helvetica", 14, "bold"))
+    def __init__(self, master: tk.Misc, text):
+        super().__init__(master, text = text, justify="center", anchor="center", font=("Helvetica", 14, "bold"))
         self.grid(row = 0, column = 0, sticky = "NSEW", padx=20, pady=10)
+        master.grid_columnconfigure(0, weight=1)
 
 """
 1. Table
@@ -309,7 +310,6 @@ class GenerateScreen(tk.Frame):
         small.grid(row=0, column=0, padx=20, pady=10)
         big.grid(row=0, column=1, padx=20, pady=10)
         selection.grid(row = 1, column = 0)
-        self.big.set(True)
 
         input = tk.Frame(self)
         tk.Label(input, text="Name:").grid(row = 1, column = 0, pady=10)
@@ -369,7 +369,6 @@ class PublicKeyDetailsScreen(tk.Frame):
         tk.Label(data, text = "Public exponent (e):").grid(row = 1, column = 0)
         tk.Label(data, text= str(key.e)).grid(row = 1, column = 1, pady=10)
         tk.Button(data, text = "Export public key", command=on_export).grid(row = 2 ,column = 0, columnspan=2, pady=10)
-        data.grid(row = 1, column=0)
 
         self._decrypt_frame = tk.Frame(data)
         self.password  = TextInput(self._decrypt_frame, placeholder="Enter password",show="*")
@@ -378,15 +377,16 @@ class PublicKeyDetailsScreen(tk.Frame):
         self._delete = tk.Button(data, text="Delete key", command=self._delete)
         self.set_on_decrypt(None)
         self.set_on_delete(None)
+        data.grid(row = 1, column=0)
     
     def set_on_decrypt(self, on_decrypt):
         self.on_decrypt = on_decrypt
         if on_decrypt is None: self._decrypt_frame.grid_forget()
-        else: self._decrypt_frame.grid(row = 4, column = 0, columnspan=2, pady=20)
+        else: self._decrypt_frame.grid(row = 3, column = 0, columnspan=2, pady=20)
     def set_on_delete(self, on_delete):
         self.on_delete = on_delete
         if on_delete is None: self._delete.grid_forget()
-        else: self._delete.grid(row = 5, column = 0, columnspan=2, pady=10)
+        else: self._delete.grid(row = 4, column = 0, columnspan=2, pady=10)
     
     def _decrypt(self):
         if self.on_decrypt is not None: self.on_decrypt(self.password.get())
@@ -479,6 +479,7 @@ class PrivateKeysScreen(NavigationHost):
         frame = ScrollableFrame(self)
         self._pub = PublicKeyDetailsScreen(frame.get_frame(), key.public, self._on_export_public)
         self._pub.grid(row = 0, column = 0)
+        frame.get_frame().grid_columnconfigure(0, weight=1)
         self._pub.set_on_decrypt(self._on_decrypt)
         self.navigate(frame, sticky="NSEW")
         
