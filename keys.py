@@ -112,6 +112,7 @@ class PrivateKeyRing:
         """
         if size <= 2048: size = 2048
         else: size = 4092
+        if password is None or len(password) == 0: raise DisplayableException("Please enter a password!")
         private = RSA.generate(bits=size, e=65537)
         public = private.public_key()
         key_id = hex(private.n % _ID_MOD)

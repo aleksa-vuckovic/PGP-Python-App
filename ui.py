@@ -495,10 +495,13 @@ class PrivateKeysScreen(NavigationHost):
 
     def _on_generate(self):
         def generate(password, size, name, email):
-            self._ring.generate_key(password, size, name, email)
-            messagebox.showinfo("Success", "A new private key was generated.")
-            self._home.refresh()
-            self.back()
+            try:
+                self._ring.generate_key(password, size, name, email)
+                messagebox.showinfo("Success", "A new private key was generated.")
+                self._home.refresh()
+                self.back()
+            except DisplayableException as e:
+                messagebox.showerror("Error", str(e))
         self.navigate(GenerateScreen(self, generate))
 
     def _on_export_public(self):
