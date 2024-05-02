@@ -199,6 +199,7 @@ class PublicKeyData:
         """
         Adds email to key signatures.
         """
+        if email in self.signatures: return
         self.signatures.append(email)
         self._ring._update_trust_score(self._data)
         self._ring._save()
@@ -316,7 +317,7 @@ class PublicKeyRing:
     def get_all(self):
         """Returns: All keys as a dictionary of PublicKeyData objects."""
         res = {}
-        for key_id, key in self._keys.items(): res[key_id] = key
+        for key_id, key in self._keys.items(): res[key_id] = PublicKeyData(key, self)
         return res
     def get_keys(self, email):
         """Returns: A dictionary of PublicKeyData objects associated with this email."""

@@ -1,8 +1,7 @@
 import tkinter as tk
 from keys import PublicKeyRing, PrivateKeyRing, PublicKeyData, PrivateKeyData
 import datetime
-from tkinter import filedialog
-from tkinter import messagebox
+from tkinter import filedialog, messagebox, simpledialog
 from Cryptodome.PublicKey import RSA
 from exceptions import DisplayableException
 def clear(frame: tk.Frame | tk.Tk):
@@ -203,11 +202,11 @@ class PrivateRingScreen(tk.Frame):
         if j == 1:
             return tk.Label(master, text = key.key_id, width=18)
         if j == 2:
-            return tk.Label(master, text = str(key.public.e), width=6, wraplength=30)
+            return tk.Label(master, text = str(key.public.e), width=6, wraplength=36)
         if j == 3:
-            return tk.Label(master, text = key.name, width=12, wraplength=60)
+            return tk.Label(master, text = key.name, width=12, wraplength=72)
         if j == 4:
-            return tk.Label(master, text = key.email, width=25, wraplength=125)
+            return tk.Label(master, text = key.email, width=25, wraplength=150)
         if j == 5:
             return tk.Button(master, text="Details", command=lambda: self.on_details(key))
         raise Exception("Unexpected j value.")
@@ -283,7 +282,7 @@ class ImportPrivateScreen(tk.Frame):
             except:
                 messagebox.showerror("Error", "Couldn't open file. Check the file path or access permission.")
                 return
-        else: data = self.text_input.get()
+        else: data = self.text_input.get("1.0", "end-1c")
         self.on_import(data, self.name_input.get(), self.email_input.get(), self.import_password.get(), self.save_password.get())
 
     
@@ -334,7 +333,6 @@ class GenerateScreen(tk.Frame):
 def big_num_representation(num):
     return hex(num)
 
-
 class TextInput(tk.Entry):
     def __init__(self, master: tk.Misc, placeholder: str, show: str):
         super().__init__(master)
@@ -376,8 +374,8 @@ class PublicKeyDetailsScreen(tk.Frame):
         self._decrypt_frame = tk.Frame(data)
         self.password  = TextInput(self._decrypt_frame, placeholder="Enter password",show="*")
         self.password.grid(row = 0, column = 0)
-        tk.Button(self._decrypt_frame, text="Decrypt", command=lambda: None if self.on_decrypt is None else self.on_decrypt(self.password.get())).grid(row = 0, column = 1)
-        self._delete = tk.Button(data, text="Delete key", command=lambda: None if self.on_delete is None else self.on_delete())
+        tk.Button(self._decrypt_frame, text="Decrypt", command=self._decrypt).grid(row = 0, column = 1)
+        self._delete = tk.Button(data, text="Delete key", command=self._delete)
         self.set_on_decrypt(None)
         self.set_on_delete(None)
     
@@ -392,6 +390,11 @@ class PublicKeyDetailsScreen(tk.Frame):
     
     def _decrypt(self):
         if self.on_decrypt is not None: self.on_decrypt(self.password.get())
+    def _delete(self):
+        if self.on_delete is None: return
+        if messagebox.askokcancel("Delete", "Are sure you want to delete this key?"):
+            self.on_delete()
+
 
 """
     -Private: p, q, d, export
@@ -524,4 +527,199 @@ class PrivateKeysScreen(NavigationHost):
         file = filedialog.asksaveasfilename()
         if not file: return
         self._key.export(file, self._password, password)
+
+"""
+Table + set trust + add signature
+Details + Export
+Import
+"""
+class PublicRingScreen(tk.Frame):
+    def __init__(self, master: tk.Misc, ring: PublicKeyRing, on_details, on_import, on_add_signature, on_set_trust):
+        """
+        Args:
+            on_details: A callback which takes the PublicKeyData object as argument.
+            on_import: A callback with no arguments.
+            on_add_signature: A callback which takes the PublicKeyData and signature email as arguments.
+            on_set_trust: A callback which takes the PublicKeyData and trust value as arguments.
+        """
+        super().__init__(master)
+        self._ring = ring
+        self._on_details = on_details
+        self._on_import = on_import
+        self._on_add_signature = on_add_signature
+        self._on_set_trust = on_set_trust
+
+        title = Title(self, "Public Key Ring")
+        self.table = ScrollTable(self, visible_rows=4, headers=["Timestamp", "Key ID", "Name", "Email", "Owner Trust", "Legit", "Signatures", "Details"])
+        self.table.grid(row = 1, column = 0, padx=10, pady=10)
+
+        impor = tk.Button(self, text = "Import", command=self._on_import)
+        impor.grid(row = 2, column = 0, ipadx=20, ipady=10)
         
+        self.refresh()
+        
+    
+    def refresh(self):
+        self.table.set_content(self.get_elem, len(self._ring.get_all()))
+    
+    def get_elem(self, master, i, j):
+        if i >= len(self._ring.get_all()): return None
+        key = list(self._ring.get_all().values())[i]
+        if j == 0:
+            text = datetime.datetime.fromtimestamp(key.timestamp).strftime("%Y-%m-%d %H:%M")
+            return tk.Label(master, text = text)
+        if j == 1:
+            return tk.Label(master, text = key.key_id, width=18)
+        if j == 2:
+            return tk.Label(master, text = key.name, width=12, wraplength=72)
+        if j == 3:
+            return tk.Label(master, text = key.email, width=25, wraplength=150)
+        if j == 4:
+            frame = tk.Frame(master)
+            tk.Label(frame, text = str(key.owner_trust), width=4, wraplength=20).pack(side="left")
+            tk.Button(frame, text="🖉", command=lambda:self._set_trust(key)).pack(side="left")
+            return frame
+        if j == 5:
+            return tk.Label(master, text="YES" if key.legitimacy else "NO", width=4, wraplength=24)
+        if j == 6:
+            frame = tk.Frame(master)
+            tk.Label(frame, text = "\n".join([sig + " (" + str(self._ring.get_owner_trust(sig)) + ")" for sig in key.signatures]), width=25, wraplength=150).pack(side="top")
+            tk.Button(frame, text="🖉", command=lambda:self._add_signature(key)).pack(side="top")
+            return frame
+        if j == 7:
+            return tk.Button(master, text="Details", command=lambda: self._on_details(key))
+        raise Exception("Unexpected j value.")
+    
+    def _set_trust(self, key: PublicKeyData):
+        value = simpledialog.askinteger("Change Owner Trust", "Enter owner trust on a scale of 0-100:")
+        if value is None: return
+        try:
+            value = int(value)
+            assert(value >= 0 and value <= 100)
+        except:
+            messagebox.showerror("Error", "Invalid entry.")
+            return
+        self._on_set_trust(key, value)
+    
+    def _add_signature(self, key: PublicKeyData):
+        value = simpledialog.askstring("Add Signature", "Enter signature email, or * for full trust:")
+        if value is None: return
+        self._on_add_signature(key, value)
+    
+
+
+    
+    
+"""
+1. File or string
+2. Name
+3. Email
+4. Import password?
+5. Save password
+"""
+class ImportPublicScreen(tk.Frame):
+    def __init__(self, master: tk.Misc, on_import):
+        """
+        Args:
+            on_import: A callback method which takes the pem text, name and email as arguments.
+        """
+        super().__init__(master)
+        self.on_import = on_import
+        Title(self, "Import Public Key")
+
+        self.file = tk.BooleanVar(value = True)
+        selection = tk.Frame(self)
+        file = tk.Radiobutton(selection, text = "Import from PEM file", variable=self.file, value=True, command=self._refresh)
+        textbox = tk.Radiobutton(selection, text = "Enter the text in PEM format", variable=self.file, value=False, command=self._refresh)
+        file.grid(row=0, column=0, padx=20, pady=10)
+        textbox.grid(row=0, column=1, padx=20, pady=10)
+        selection.grid(row = 1, column = 0)
+        self.file.set(True)
+        
+        input = tk.Frame(self)
+        self.selected_file = tk.Entry(input)
+        self.select_file_button = tk.Button(input, text = "Select File", command=lambda:self._select_file(filedialog.askopenfilename()))
+        self.text_input = tk.Text(input, width=50, height=10)
+        tk.Label(input, text="Name:").grid(row = 1, column = 0, pady=10)
+        self.name_input = tk.Entry(input)
+        self.name_input.grid(row = 1, column=1)
+        tk.Label(input, text="Email:").grid(row = 2, column = 0, pady=10)
+        self.email_input = tk.Entry(input)
+        self.email_input.grid(row = 2, column=1)
+        tk.Button(self, text="Import", command=self._import).grid(row=5,column=0,pady=10)
+        input.grid(row=2, column=0)
+        self._refresh()
+
+
+    def _select_file(self, value):
+        self.selected_file.delete(0, tk.END)
+        self.selected_file.insert(0, value)
+    
+    def _refresh(self):
+        if self.file.get():
+            self.selected_file.grid(row = 0, column = 1, pady=10)
+            self.select_file_button.grid(row = 0, column = 0)
+            self.text_input.grid_forget()
+        else:
+            self.selected_file.grid_forget()
+            self.select_file_button.grid_forget()
+            self.text_input.grid(row = 0, column = 0, columnspan=2, pady=5)
+
+    def _import(self):
+        if self.file.get():
+            try:
+                with open(self.selected_file.get()) as file:
+                    data = file.read()
+            except:
+                messagebox.showerror("Error", "Couldn't open file. Check the file path or access permission.")
+                return
+        else: data = self.text_input.get("1.0", "end-1c")
+        self.on_import(data, self.name_input.get(), self.email_input.get())
+    
+
+class PublicKeysScreen(NavigationHost):
+    def __init__(self, master):
+        super().__init__(master)
+        self._ring = PublicKeyRing.get_instance()
+        self._home = PublicRingScreen(self, self._ring, self._on_details, self._on_import, self._on_add_signature, self._on_set_trust)
+        self.navigate(self._home)
+
+    def _on_details(self, key: PublicKeyData):
+        self._key = key
+        frame = ScrollableFrame(self)
+        self._pub = PublicKeyDetailsScreen(frame.get_frame(), key.public, self._on_export)
+        self._pub.grid(row = 0, column = 0)
+        self._pub.set_on_delete(self._on_delete)
+        self.navigate(frame, sticky="NSEW")
+        
+    def _on_import(self):
+        def import_key(pem, name, email):
+            try:
+                self._ring.add_key(pem, name, email)
+                messagebox.showinfo("Success", "Key was successfully imported. You can add signatures and set owner trust in the Public Key Ring section.")
+                self._home.refresh()
+                self.back()
+            except DisplayableException as e:
+                messagebox.showerror("Error", str(e))
+        self.navigate(ImportPublicScreen(self, import_key))
+
+    def _on_export(self):
+        file = filedialog.asksaveasfilename()
+        if not file: return
+        self._key.export(file)
+    
+    def _on_delete(self):
+        self._key.delete()
+        messagebox.showinfo("Success", "The key was successfully deleted.")
+        self._key = None
+        self._home.refresh()
+        self.back()
+    
+    def _on_add_signature(self, key: PublicKeyData, email: str):
+        key.add_signature(email)
+        self._home.refresh()
+    
+    def _on_set_trust(self, key: PublicKeyData, value: int):
+        self._ring.set_owner_trust(key.email, value)
+        self._home.refresh()
+    
