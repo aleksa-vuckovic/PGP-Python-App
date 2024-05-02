@@ -7,6 +7,9 @@ from tkinter import messagebox
 from tkinter.filedialog import askopenfile
 from tkinter.simpledialog import askstring
 
+from Cryptodome.Cipher import AES, DES3, PKCS1_OAEP
+from Cryptodome.Util.Padding import unpad
+
 from keys import PrivateKeyRing, PrivateKeyData, PublicKeyRing, PublicKeyData
 
 from Cryptodome.Hash import SHA1
@@ -19,6 +22,14 @@ text_area=None
 
 
 def receive_message_frame_module_init():
+
+    def decrypt_message(message,algo,params):
+        if algo=="AES":
+            aes_handle=AES.new(params[0],AES.MODE_CFB,params[1])
+            return unpad(aes_handle.decrypt(message),AES.block_size)
+        else: #TripleDES
+            triple_des_handle=DES3.new(params[0],DES3.MODE_CFB,params[1])
+            return unpad(triple_des_handle.decrypt(message),DES3.block_size)
     def receive_message():
         choosen_filename = askopenfile()
 
@@ -39,44 +50,80 @@ def receive_message_frame_module_init():
         if "radix" in ciphertext:
             ciphertext=eval(base64.b64decode(ciphertext["radix"].encode("ascii")).decode("ascii"))
 
+            radix_label.config(text="Radix64 ✓")
         if "Ks" in ciphertext:
-            pass
+            Ks=ciphertext["Ks"]
+            PUb_mod=ciphertext["pub_mod"]
+            algoritham=ciphertext["algoritham"]
+            params=ciphertext["params"]
+            msg=ciphertext["message"]
+
+            #decription of Ks
+
+            PRb=None
+            try:
+                passphrase=askstring("Input", "Input an passphrase:")
+                private_ring=PrivateKeyRing.get_instance()
+                print(hex(PUb_mod))
+                private_data=private_ring.get_key(hex(PUb_mod))
+                print("----a---")
+
+                PRb=private_data.decode(passphrase)
+
+            except Exception:
+                messagebox.showinfo("Error","Wrong password!")
+                return
+
+
+            rsa_encr = PKCS1_OAEP.new(PRb)
+            Ks=rsa_encr.decrypt(Ks)
+
+            ciphertext=decrypt_message(msg,algoritham,(Ks,params[1]))
+            ciphertext=eval(ciphertext)
+            print(ciphertext)
+            encryption_label.config(text="Encryption ✓")
+
+            #pass
 
         if "zip" in ciphertext:
             ciphertext=eval(zlib.decompress(ciphertext["zip"]).decode("utf-8"))
+            zip_label.config(text="Zip ✓")
 
+            print("zip")
+            print(ciphertext)
 
-        if "signature" in ciphertext:
+        if "pua_mod" in ciphertext:
+            print("pua_mod")
             signature=ciphertext["signature"]
             PUa_mod=ciphertext["pua_mod"]
             msg=ciphertext["msg"]
+            print("pua2)")
 
-            passphrase=askstring("Input", "Input an passphrase:")
-
+            #passphrase=askstring("Input", "Input an passphrase:")
+            print("pua3")
             publicRing: PublicKeyRing = PublicKeyRing.get_instance()
+            publicData=None
+
             print(PUa_mod)
             try:
-                publicData: PublicKeyData = publicRing.get_key(int(PUa_mod,16))  # id is PUa%2^64
+                publicData: PublicKeyData = publicRing.get_key(PUa_mod)  # id is PUa%2^64
             except Exception:
                 messagebox.showinfo("Warning","This key does not exists in public ring!")
                 return
-            rsa = None
 
-            try:
-                rsa = publicData.decode(passphrase)
-            except Exception:
-                messagebox.showinfo("Info", "Error wrong password!")
-                return
 
             hash = SHA1.new(str(msg).encode('utf-8'))
 
-            try:
-                pkcs1_15.new(rsa).verify(hash, signature)
-            except (ValueError, TypeError):
-                messagebox.showinfo("Error","Wrong message!")
+            pd=publicRing.get_key(PUa_mod)
 
+            print(hash)
+            pkcs=pkcs1_15.new(pd.public)
 
+            print(pkcs.verify(hash,signature))
 
+            print(ciphertext)
+            authentication_label.config(text="Authentication ✓")
+            ciphertext=msg
 
         # Insert the ciphertext into the text area
         text_area.config(state="normal")  # Enable the text area for editing

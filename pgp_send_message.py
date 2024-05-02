@@ -15,7 +15,7 @@ from Cryptodome.Random import get_random_bytes
 from Cryptodome.Signature import pkcs1_15
 from Cryptodome.Util.Padding import pad
 
-from keys import PrivateKeyRing, PrivateKeyData
+from keys import PrivateKeyRing, PrivateKeyData, PublicKeyRing
 
 from pprint import pprint
 
@@ -34,7 +34,7 @@ def send_pgp_message_module_init():
     radix_flag = tkinter.IntVar()
 
     passphrase_password = None
-    
+
     #listeners
     def on_state_change_authentication_checkbox():
         if authentication_flag.get()!=1:
@@ -68,6 +68,7 @@ def send_pgp_message_module_init():
 
     def authentication_passphrase_dialog(MouseClicked):
         global passphrase
+        '''
         passphrase = askstring("Input", "Input an passphrase:")
         passphrase_hash = sha1_hash_for_password(passphrase)
 
@@ -77,14 +78,14 @@ def send_pgp_message_module_init():
         else:
             messagebox.showinfo("Info:", "Password is valid!")
             return passphrase
-
+        '''
     def encrtyption_of_message(message,algoritham):
 
         if algoritham=="AES": #AES
             Ks = get_random_bytes(16)#size=16
             c=AES.new(Ks,AES.MODE_CFB)
             enc=c.encrypt(
-                pad(bytearray(str(message).encode('utf-8')),AES.MODE_CFB)
+                pad(bytearray(str(message).encode('utf-8')),AES.block_size)
             )
             return enc,(Ks,c.iv)
         else:#TripleDES
@@ -116,7 +117,7 @@ def send_pgp_message_module_init():
         if zip_flag.get()==1:
             zip_f=True
         if encryption_flag.get()==1:
-            PUb=int(encryption_public_key_id_list.get())
+            PUb=int(encryption_public_key_id_list.get(),16)
             enc_algo=encryption_alorithm_var.get()
         if radix_flag.get()==1:
             radix64_f=True
@@ -136,25 +137,27 @@ def send_pgp_message_module_init():
         print(message)
         if authentication_flag.get()==1:
             auth={}
-            hash=SHA1.new(str(text).encode('utf-8'))
+            hash=SHA1.new(str(message).encode('utf-8'))
 
             privateRing:PrivateKeyRing=PrivateKeyRing.get_instance()
             print(PUa_mod)
             privateData:PrivateKeyData=privateRing.get_key(PUa_mod) #id is PUa%2^64
-            rsa=None
+            PRa=None
             try:
-                rsa=privateData.decode(passphrase)
+                passphrase = askstring("Input", "Input an passphrase:")
+                PRa=privateData.decode(passphrase)
             except Exception:
                 messagebox.showinfo("Info","Error wrong password!")
                 return
 
-            auth_signature = pkcs1_15.new(rsa).sign(hash)  # Create the PKCS1 v1.5 signature of a message.
+            auth_signature = pkcs1_15.new(PRa).sign(hash)  # Create the PKCS1 v1.5 signature of a message.
             print(auth_signature)
             auth["msg"]=message
             auth["signature"]=auth_signature
             auth["pua_mod"]=PUa_mod #should add PUa%pow(2,64)
             message=auth
             pprint(message)
+
         if zip_f:
             zip={}
             zip["zip"]=zlib.compress(str(message).encode('utf-8'))
@@ -165,11 +168,20 @@ def send_pgp_message_module_init():
             encrypted_message,params=encrtyption_of_message(message,enc_algo)#cipher,(Ks,IV)
 
             encr["message"]=encrypted_message
-            encr["pub_mod"]=1 #this should be changed to pub%pow(2,64)
-            tmp_pub=encryption_of_Ks(PUb)
+            encr["pub_mod"]=PUb%pow(2,64) #this should be changed to pub%pow(2,64)
 
-            encr["Ks"]=tmp_pub.encrypt(params[0])
+            public_ring=PublicKeyRing.get_instance()
+            rsa_key=None
+            try:
+                rsa_key=public_ring.get_key(hex(PUb)).public
+            except Exception:
+                pass
+
+            tmp_pub=encryption_of_Ks(rsa_key)
+            print(tmp_pub,params)
+            encr["Ks"]=tmp_pub.encrypt(params[0])#encrypted Ks
             encr["algoritham"]=enc_algo
+            encr["params"]=params
 
             message=encr
 
@@ -192,15 +204,10 @@ def send_pgp_message_module_init():
        print(filename)
        print(num)
     def show2(MouseClicked):
-       passphrase = askstring("Input", "Input an passphrase:")
+       passphrase ="123"
        passphrase_hash=sha1_hash_for_password(passphrase)
 
-       if passphrase_hash!="40bd001563085fc35165329ea1ff5c5ecbdbbeef":#here you should switch with real hash
-           messagebox.showinfo("Info:","Wrong password!")
-           return None
-       else:
-           messagebox.showinfo("Info:","Password is valid!")
-           return passphrase
+
 
 
     def creation_of_sending_message_frame():
@@ -250,8 +257,9 @@ def send_pgp_message_module_init():
     encryption_label_users=tkinter.Label(sending_message_frame,text="Public key:",font=("Arial",16),state="disabled")
     encryption_label_users.place(x=300,y=100)
 
-    #public_ring_ids=[key for key in PublicKeyRing.get_instance().get_all().keys()] - this will be added later
-    encryption_public_key_id_list=ttk.Combobox(sending_message_frame,textvariable=encryption_public_key_id,values=["123","456","789"],state="disabled")
+    public_ring_ids=[key for key in PublicKeyRing.get_instance().get_all().keys()] #- this will be added later
+
+    encryption_public_key_id_list=ttk.Combobox(sending_message_frame,textvariable=encryption_public_key_id,values=public_ring_ids,state="disabled")
     encryption_public_key_id_list.place(x=550,y=100)
 
     encryption_algorithm=ttk.Combobox(sending_message_frame,text="Choose algorithm",textvariable=encryption_alorithm_var,values=["TripleDES","AES"],state="disable")
@@ -281,10 +289,5 @@ def send_pgp_message_module_init():
 
     B = Button(sending_message_frame, text ="Send message", command=send_message)
     B.place(x=400,y=400)
-    #not important (simple example)
-    langs = ["C", "C++", "Java","Python", "PHP"]
 
-    Combo = ttk.Combobox(sending_message_frame, values=langs)
-    Combo.set("Pick an Option")
-    #Combo.pack(padx=100, pady=100)
     return sending_message_frame
