@@ -278,7 +278,7 @@ class PublicKeyRing:
             if email in key["signatures"]: self._update_trust_score(key)
         self._save()
 
-    def add_key(self, value: str, name, email, owner_trust = None, signatures = []) -> PublicKeyData:
+    def add_key(self, value: str, name, email, owner_trust = None, signatures = None)-> PublicKeyData:
         """
         Adds new public key.
         If owner_trust is None, than the existing owner_trust value is used, or 0 if no entries exists.
@@ -298,6 +298,7 @@ class PublicKeyRing:
         if owner_trust is None: owner_trust = self.get_owner_trust(email)
         else: self.set_owner_trust(email, owner_trust)
         key_id = hex(public.n % _ID_MOD)
+        if signatures is None: signatures = []
         key = {
             "timestamp": time.time(),
             "key_id": key_id,

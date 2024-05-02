@@ -60,7 +60,7 @@ class ScrollBar(tk.Frame):
             else: elem.config(bg="lightgrey")
         if 0 in range(a,b): self.up_button.config(state="disabled")
         else: self.up_button.config(state="normal")
-        if len(self.segments)-1 in range(a,b): self.down_button.config(state="disabled")
+        if (len(self.segments)-1) in range(a,b): self.down_button.config(state="disabled")
         else: self.down_button.config(state="normal")
 
 class ScrollTable(tk.Frame):
@@ -693,6 +693,7 @@ class PublicKeysScreen(NavigationHost):
         frame = ScrollableFrame(self)
         self._pub = PublicKeyDetailsScreen(frame.get_frame(), key.public, self._on_export)
         self._pub.grid(row = 0, column = 0)
+        frame.get_frame().grid_columnconfigure(0, weight=1)
         self._pub.set_on_delete(self._on_delete)
         self.navigate(frame, sticky="NSEW")
         
