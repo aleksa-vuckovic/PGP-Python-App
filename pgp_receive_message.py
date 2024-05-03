@@ -119,7 +119,11 @@ def receive_message_frame_module_init():
             print(hash)
             pkcs=pkcs1_15.new(pd.public)
 
-            print(pkcs.verify(hash,signature))
+            try:
+                pkcs.verify(hash,signature)
+            except Exception:
+                messagebox.showinfo("Warning","Signature is not correct, somebody changed the message!")
+                return
 
             print(ciphertext)
             authentication_label.config(text="Authentication ✓")
