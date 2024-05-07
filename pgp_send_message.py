@@ -22,7 +22,9 @@ from pprint import pprint
 from MessageHandling.MessageSending import *
 
 
-def authenticatin_list_refresh():
+
+
+def authentication_list_refresh():
     private_ring_ids=[key for key in PrivateKeyRing.get_instance().get_all().keys()]
     authentication_private_key_id_list.config(values=private_ring_ids)
 def encryption_list_refresh():
