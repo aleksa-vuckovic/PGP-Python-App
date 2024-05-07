@@ -19,6 +19,9 @@ from keys import PrivateKeyRing, PrivateKeyData, PublicKeyRing
 
 from pprint import pprint
 
+from MessageHandling.MessageSending import *
+
+
 def send_pgp_message_module_init():
     # pgp_sending_message_init (must be after createing window)
 
@@ -135,60 +138,25 @@ def send_pgp_message_module_init():
         }
 
         print(message)
-        if authentication_flag.get()==1:
-            auth={}
-            hash=SHA1.new(str(message).encode('utf-8'))
 
-            privateRing:PrivateKeyRing=PrivateKeyRing.get_instance()
-            print(PUa_mod)
-            privateData:PrivateKeyData=privateRing.get_key(PUa_mod) #id is PUa%2^64
-            PRa=None
-            try:
-                passphrase = askstring("Input", "Input an passphrase:")
-                PRa=privateData.decode(passphrase)
-            except Exception:
-                messagebox.showinfo("Info","Error wrong password!")
-                return
+        sending_frame={
+            "authentication_flag":authentication_flag,
+            "PUa_mod":PUa_mod,
+            "zip_f":zip_f,
+            "encryption_flag":encryption_flag,
+            "enc_algo":enc_algo,
+            "PUb":PUb,
+            "radix64_f":radix64_f
+        }
 
-            auth_signature = pkcs1_15.new(PRa).sign(hash)  # Create the PKCS1 v1.5 signature of a message.
-            print(auth_signature)
-            auth["msg"]=message
-            auth["signature"]=auth_signature
-            auth["pua_mod"]=PUa_mod #should add PUa%pow(2,64)
-            message=auth
-            pprint(message)
+        auth_sender=AuthenticationSender()
+        zip_sender=ZipSender()
+        encrypt_sender=EncryptionSender()
+        radix_sender=RadixSender()
 
-        if zip_f:
-            zip={}
-            zip["zip"]=zlib.compress(str(message).encode('utf-8'))
-            message=zip
+        auth_sender.set_next(zip_sender).set_next(encrypt_sender).set_next(radix_sender)
 
-        if encryption_flag.get()==1:
-            encr={}
-            encrypted_message,params=encrtyption_of_message(message,enc_algo)#cipher,(Ks,IV)
-
-            encr["message"]=encrypted_message
-            encr["pub_mod"]=PUb%pow(2,64) #this should be changed to pub%pow(2,64)
-
-            public_ring=PublicKeyRing.get_instance()
-            rsa_key=None
-            try:
-                rsa_key=public_ring.get_key(hex(PUb)).public
-            except Exception:
-                pass
-
-            tmp_pub=encryption_of_Ks(rsa_key)
-            print(tmp_pub,params)
-            encr["Ks"]=tmp_pub.encrypt(params[0])#encrypted Ks
-            encr["algoritham"]=enc_algo
-            encr["params"]=params
-
-            message=encr
-
-        if radix64_f:
-            radix={}
-            radix["radix"]=radix64_encription(message)
-            message=radix
+        message=auth_sender.handle(message,params=sending_frame)
 
         with open(choosen_directory,"w") as file:
             print(str(message))

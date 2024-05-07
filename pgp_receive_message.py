@@ -66,7 +66,7 @@ def receive_message_frame_module_init():
                 private_ring=PrivateKeyRing.get_instance()
                 print(hex(PUb_mod))
                 private_data=private_ring.get_key(hex(PUb_mod))
-                print("----a---")
+
 
                 PRb=private_data.decode(passphrase)
 
