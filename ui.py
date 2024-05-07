@@ -4,6 +4,7 @@ import datetime
 from tkinter import filedialog, messagebox, simpledialog
 from Cryptodome.PublicKey import RSA
 from exceptions import DisplayableException
+from pgp_send_message import authentication_list_refresh, encryption_list_refresh
 def clear(frame: tk.Frame | tk.Tk):
     for child in frame.winfo_children():
         child.destroy()
@@ -489,6 +490,7 @@ class PrivateKeysScreen(NavigationHost):
                 self._ring.import_key(pem, save_pass, name, email, import_pass)
                 messagebox.showinfo("Success", "Key was successfully imported.")
                 self._home.refresh()
+                authentication_list_refresh()
                 self.back()
             except DisplayableException as e:
                 messagebox.showerror("Error", str(e))
@@ -500,6 +502,7 @@ class PrivateKeysScreen(NavigationHost):
                 self._ring.generate_key(password, size, name, email)
                 messagebox.showinfo("Success", "A new private key was generated.")
                 self._home.refresh()
+                authentication_list_refresh()
                 self.back()
             except DisplayableException as e:
                 messagebox.showerror("Error", str(e))
@@ -525,6 +528,7 @@ class PrivateKeysScreen(NavigationHost):
         messagebox.showinfo("Success", "The key was successfully deleted.")
         self._key = None
         self._home.refresh()
+        authentication_list_refresh()
         self.back()
     
     def _on_export_private(self, password):
@@ -703,6 +707,7 @@ class PublicKeysScreen(NavigationHost):
                 self._ring.add_key(pem, name, email)
                 messagebox.showinfo("Success", "Key was successfully imported. You can add signatures and set owner trust in the Public Key Ring section.")
                 self._home.refresh()
+                encryption_list_refresh()
                 self.back()
             except DisplayableException as e:
                 messagebox.showerror("Error", str(e))
@@ -718,13 +723,16 @@ class PublicKeysScreen(NavigationHost):
         messagebox.showinfo("Success", "The key was successfully deleted.")
         self._key = None
         self._home.refresh()
+        encryption_list_refresh()
         self.back()
     
     def _on_add_signature(self, key: PublicKeyData, email: str):
         key.add_signature(email)
         self._home.refresh()
+        encryption_list_refresh()
     
     def _on_set_trust(self, key: PublicKeyData, value: int):
         self._ring.set_owner_trust(key.email, value)
         self._home.refresh()
+        encryption_list_refresh()
     
