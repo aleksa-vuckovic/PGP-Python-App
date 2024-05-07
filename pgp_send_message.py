@@ -82,29 +82,7 @@ def send_pgp_message_module_init():
             messagebox.showinfo("Info:", "Password is valid!")
             return passphrase
         '''
-    def encrtyption_of_message(message,algoritham):
 
-        if algoritham=="AES": #AES
-            Ks = get_random_bytes(16)#size=16
-            c=AES.new(Ks,AES.MODE_CFB)
-            enc=c.encrypt(
-                pad(bytearray(str(message).encode('utf-8')),AES.block_size)
-            )
-            return enc,(Ks,c.iv)
-        else:#TripleDES
-            Ks=get_random_bytes(24) #size=24
-            c=DES3.new(Ks,DES3.MODE_CFB)
-            enc=c.encrypt(
-                pad(bytearray(str(message).encode('utf-8')),DES3.block_size)
-            )
-            return enc,(Ks,c.iv)
-
-    def encryption_of_Ks(PUb):
-        rsa_encr=PKCS1_OAEP.new(PUb)
-        return rsa_encr
-
-    def radix64_encription(message):
-        return base64.b64encode(str(message).encode('ascii')).decode('ascii')
 
     def send_message():
         #ask for directory->returns name of directory
@@ -164,25 +142,10 @@ def send_pgp_message_module_init():
 
         return
 
-
-
-    def show():
-       num = askinteger("Input", "Input an Integer")
-       filename = askopenfile()
-       print(filename)
-       print(num)
-    def show2(MouseClicked):
-       passphrase ="123"
-       passphrase_hash=sha1_hash_for_password(passphrase)
-
-
-
-
     def creation_of_sending_message_frame():
 
         sending_message_frame = tkinter.Frame()
 
-        #TO DO
         return sending_message_frame
 
 

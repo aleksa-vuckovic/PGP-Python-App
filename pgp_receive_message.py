@@ -44,8 +44,10 @@ def receive_message_frame_module_init():
             ciphertext=file.read()
             ciphertext=ast.literal_eval(ciphertext)
 
-
-            #ciphertext=eval(ciphertext)
+        radix_label.config(text="Radix64")
+        encryption_label.config(text="Encryption")
+        zip_label.config(text="Zip")
+        authentication_label.config(text="Authentication")
 
         if "radix" in ciphertext:
             ciphertext=eval(base64.b64decode(ciphertext["radix"].encode("ascii")).decode("ascii"))

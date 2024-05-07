@@ -43,11 +43,12 @@ class AbstractHandler(Handler):
     _next_handler:Handler=None
 
     def set_next(self,handler:Handler)->Handler:
-        self_next_handler=handler
+        self._next_handler=handler
 
         return handler
 
     def handle(self,request,params):
+        print(self._next_handler)
         if self._next_handler:
             return self._next_handler.handle(request,params)
         return request
@@ -80,11 +81,12 @@ class AuthenticationSender(AbstractHandler):
             print(auth_signature)
             auth["msg"] = request
             auth["signature"] = auth_signature
-            auth["pua_mod"] = params["PUa_mod"]  # should add PUa%pow(2,64)
+            auth["pua_mod"] = params["PUa_mod"]
             request = auth
 
             return super().handle(request,params)
-        return super().handle(request, params)
+        else:
+            return super().handle(request, params)
 class ZipSender(AbstractHandler):
 
     def handle(self,request,params):
@@ -94,7 +96,8 @@ class ZipSender(AbstractHandler):
             request = zip
 
             return super().handle(request,params)
-        return super().handle(request,params)
+        else:
+            return super().handle(request,params)
 
 class EncryptionSender(AbstractHandler):
 
@@ -120,8 +123,9 @@ class EncryptionSender(AbstractHandler):
         rsa_encr=PKCS1_OAEP.new(PUb)
         return rsa_encr
     def handle(self,request,params):
-
+        print("pozvan encrypt")
         if params["encryption_flag"].get()==1:
+            print("encryption")
             encr = {}
             encrypted_message, params_b = self.encrtyption_of_message(request, params["enc_algo"])  # cipher,(Ks,IV)
 
@@ -144,7 +148,8 @@ class EncryptionSender(AbstractHandler):
             request = encr
 
             return super().handle(request, params)
-        return super().handle(request, params)
+        else:
+            return super().handle(request, params)
 
 class RadixSender(AbstractHandler):
 
@@ -158,4 +163,5 @@ class RadixSender(AbstractHandler):
             request = radix
 
             return super().handle(request, params)
-        return super().handle(request, params)
+        else:
+            return super().handle(request, params)
