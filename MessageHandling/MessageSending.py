@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 
-
-
 import base64
 import datetime
 import tkinter
