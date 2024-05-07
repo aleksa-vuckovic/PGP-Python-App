@@ -22,6 +22,14 @@ from pprint import pprint
 from MessageHandling.MessageSending import *
 
 
+def authenticatin_list_refresh():
+    private_ring_ids=[key for key in PrivateKeyRing.get_instance().get_all().keys()]
+    authentication_private_key_id_list.config(values=private_ring_ids)
+def encryption_list_refresh():
+    public_ring_ids=[key for key in PublicKeyRing.get_instance().get_all().keys()]
+    encryption_public_key_id_list.config(values=public_ring_ids)
+
+
 def send_pgp_message_module_init():
     # pgp_sending_message_init (must be after createing window)
 
@@ -168,11 +176,11 @@ def send_pgp_message_module_init():
     authentication_label_private_key=tkinter.Label(sending_message_frame,text="Private key:",state="disabled",font=("Arial",16))
     authentication_label_private_key.place(x=300,y=50)
 
+
+    global private_ring_ids
     private_ring_ids=[key for key in PrivateKeyRing.get_instance().get_all().keys()]
 
-    #print(private_ring_ids)
-
-    #here i should use private key id list, when it is made
+    global authentication_private_key_id_list
     authentication_private_key_id_list=ttk.Combobox(sending_message_frame,textvariable=authentication_private_key_id,values=private_ring_ids,state="disabled")
     authentication_private_key_id_list.place(x=550,y=50)
     authentication_private_key_id_list.bind("<<ComboboxSelected>>", authentication_passphrase_dialog)
@@ -188,8 +196,10 @@ def send_pgp_message_module_init():
     encryption_label_users=tkinter.Label(sending_message_frame,text="Public key:",font=("Arial",16),state="disabled")
     encryption_label_users.place(x=300,y=100)
 
+    global public_ring_ids
     public_ring_ids=[key for key in PublicKeyRing.get_instance().get_all().keys()] #- this will be added later
 
+    global encryption_public_key_id_list
     encryption_public_key_id_list=ttk.Combobox(sending_message_frame,textvariable=encryption_public_key_id,values=public_ring_ids,state="disabled")
     encryption_public_key_id_list.place(x=550,y=100)
 
