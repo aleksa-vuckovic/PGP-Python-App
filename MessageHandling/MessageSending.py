@@ -81,7 +81,7 @@ class AuthenticationSender(AbstractHandler):
                 return
 
             auth_signature = pkcs1_15.new(PRa).sign(hash)  # Create the PKCS1 v1.5 signature of a message.
-            print(auth_signature)
+
             auth["msg"] = request
             auth["signature"] = auth_signature
             auth["pua_mod"] = params["PUa_mod"]
@@ -126,9 +126,9 @@ class EncryptionSender(AbstractHandler):
         rsa_encr=PKCS1_OAEP.new(PUb)
         return rsa_encr
     def handle(self,request,params):
-        print("pozvan encrypt")
+
         if params["encryption_flag"].get()==1:
-            print("encryption")
+
             encr = {}
             try:
                 encrypted_message, params_b = self.encrtyption_of_message(request, params["enc_algo"])  # cipher,(Ks,IV)
@@ -137,7 +137,7 @@ class EncryptionSender(AbstractHandler):
                 return
 
             encr["message"] = encrypted_message
-            encr["pub_mod"] = params["PUb"] % pow(2, 64)  # this should be changed to pub%pow(2,64)
+            encr["pub_mod"] = params["PUb"] % pow(2, 64)
 
             public_ring = PublicKeyRing.get_instance()
             rsa_key = None
@@ -147,7 +147,7 @@ class EncryptionSender(AbstractHandler):
                 pass
 
             tmp_pub = self.encryption_of_Ks(rsa_key)
-            print(tmp_pub, params_b)
+
             encr["Ks"] = tmp_pub.encrypt(params_b[0])  # encrypted Ks
             encr["algoritham"] = params["enc_algo"]
             encr["iv"] = params_b[1]

@@ -25,8 +25,7 @@ def receive_message_frame_module_init():
             return
 
 
-        ciphertext = dict()
-        print(choosen_filename.name)
+
 
         with open(choosen_filename.name, "r") as file:
             ciphertext=file.read()

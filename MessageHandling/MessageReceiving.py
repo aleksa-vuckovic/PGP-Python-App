@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractmethod
 
-import ast
+
 import base64
 import tkinter
 import zlib
@@ -82,7 +82,7 @@ class AuthenticationReceiver(AbstractHandler):
 
             pd=publicRing.get_key(PUa_mod)
 
-            print(hash)
+
             pkcs=pkcs1_15.new(pd.public)
 
             try:
@@ -91,7 +91,7 @@ class AuthenticationReceiver(AbstractHandler):
                 messagebox.showinfo("Warning","Signature is not correct, somebody changed the message!")
                 return
 
-            print(ciphertext)
+
             params["authentication_label"].config(text="Authentication ✓")
             ciphertext=msg
 
