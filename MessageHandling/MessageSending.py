@@ -1,3 +1,4 @@
+
 from abc import ABC, abstractmethod
 
 import base64
@@ -65,8 +66,12 @@ class AuthenticationSender(AbstractHandler):
             hash = SHA1.new(str(request).encode('utf-8'))
 
             privateRing: PrivateKeyRing = PrivateKeyRing.get_instance()
+            try:
+                privateData: PrivateKeyData = privateRing.get_key(params["PUa_mod"])  # id is PUa%2^64
+            except Exception:
+                messagebox.showinfo("Error", "You have to choose correct algorithm and key. Try again!")
+                return
 
-            privateData: PrivateKeyData = privateRing.get_key(params["PUa_mod"])  # id is PUa%2^64
             PRa = None
             try:
                 passphrase = askstring("Input", "Input an passphrase:")
@@ -125,7 +130,11 @@ class EncryptionSender(AbstractHandler):
         if params["encryption_flag"].get()==1:
             print("encryption")
             encr = {}
-            encrypted_message, params_b = self.encrtyption_of_message(request, params["enc_algo"])  # cipher,(Ks,IV)
+            try:
+                encrypted_message, params_b = self.encrtyption_of_message(request, params["enc_algo"])  # cipher,(Ks,IV)
+            except Exception:
+                messagebox.showinfo("Error", "You have to choose correct algorithm and key. Try again!")
+                return
 
             encr["message"] = encrypted_message
             encr["pub_mod"] = params["PUb"] % pow(2, 64)  # this should be changed to pub%pow(2,64)
@@ -141,7 +150,7 @@ class EncryptionSender(AbstractHandler):
             print(tmp_pub, params_b)
             encr["Ks"] = tmp_pub.encrypt(params_b[0])  # encrypted Ks
             encr["algoritham"] = params["enc_algo"]
-            encr["params"] = params_b
+            encr["iv"] = params_b[1]
 
             request = encr
 

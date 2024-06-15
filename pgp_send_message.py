@@ -79,19 +79,7 @@ def send_pgp_message_module_init():
 
         return passphrase_hash #Return the printable digest of the message that has been hashed so far.
 
-    def authentication_passphrase_dialog(MouseClicked):
-        global passphrase
-        '''
-        passphrase = askstring("Input", "Input an passphrase:")
-        passphrase_hash = sha1_hash_for_password(passphrase)
 
-        if passphrase_hash != "40bd001563085fc35165329ea1ff5c5ecbdbbeef":  # hire you should switch with real hash
-            messagebox.showinfo("Info:", "Wrong password!")
-            return None
-        else:
-            messagebox.showinfo("Info:", "Password is valid!")
-            return passphrase
-        '''
 
 
     def send_message():
@@ -108,7 +96,12 @@ def send_pgp_message_module_init():
         if zip_flag.get()==1:
             zip_f=True
         if encryption_flag.get()==1:
-            PUb=int(encryption_public_key_id_list.get(),16)
+            try:
+                PUb=int(encryption_public_key_id_list.get(),16)
+            except Exception:
+                messagebox.showinfo("Error","You have to choose correct algorithm and key. Try again!")
+                return
+
             enc_algo=encryption_alorithm_var.get()
         if radix_flag.get()==1:
             radix64_f=True
@@ -185,7 +178,7 @@ def send_pgp_message_module_init():
     global authentication_private_key_id_list
     authentication_private_key_id_list=ttk.Combobox(sending_message_frame,textvariable=authentication_private_key_id,values=private_ring_ids,state="disabled")
     authentication_private_key_id_list.place(x=550,y=50)
-    authentication_private_key_id_list.bind("<<ComboboxSelected>>", authentication_passphrase_dialog)
+
 
 
     #encryption

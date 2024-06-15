@@ -1,3 +1,4 @@
+
 from abc import ABC, abstractmethod
 
 import ast
@@ -127,7 +128,7 @@ class EncryptionReciever(AbstractHandler):
             Ks=ciphertext["Ks"]
             PUb_mod=ciphertext["pub_mod"]
             algoritham=ciphertext["algoritham"]
-            params=ciphertext["params"]
+            iv=ciphertext["iv"]
             msg=ciphertext["message"]
 
             #decription of Ks
@@ -150,8 +151,13 @@ class EncryptionReciever(AbstractHandler):
             rsa_encr = PKCS1_OAEP.new(PRb)
             Ks=rsa_encr.decrypt(Ks)
 
-            ciphertext=self.decrypt_message(msg,algoritham,(Ks,params[1]))
-            ciphertext=eval(ciphertext)
+            ciphertext=self.decrypt_message(msg,algoritham,(Ks,iv))
+            try:
+                ciphertext=eval(ciphertext)
+            except Exception:
+                messagebox.showinfo("Error","Message changed")
+                return
+
             print(ciphertext)
             params_l["encryption_label"].config(text="Encryption ✓")
 
@@ -163,12 +169,13 @@ class EncryptionReciever(AbstractHandler):
 class RadixReceiver(AbstractHandler):
     def handle(self,ciphertext,params):
         if "radix" in ciphertext:
-            ciphertext = eval(base64.b64decode(ciphertext["radix"].encode("ascii")).decode("ascii"))
-
+            try:
+                ciphertext = eval(base64.b64decode(ciphertext["radix"].encode("ascii")).decode("ascii"))
+            except Exception:
+                messagebox.showinfo("Error","Message changed!")
+                return
             params["radix_label"].config(text="Radix64 ✓")
 
             return super().handle(ciphertext,params)
         else:
             return super().handle(ciphertext,params)
-
-
