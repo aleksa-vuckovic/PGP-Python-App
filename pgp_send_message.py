@@ -66,22 +66,6 @@ def send_pgp_message_module_init():
             encryption_public_key_id_list.config(state="disabled")
             encryption_algorithm.config(state="disabled")
 
-
-    #encription
-    def sha1_hash_for_password(passphrase):
-        passphrase_password=passphrase
-        passphrase_bytearay=bytearray(passphrase.encode('utf-8')) #Creaton of bytearray from string
-
-        sha1_factory=SHA1.new() #Create a new hash object
-        sha1_factory.update(passphrase_bytearay) #Continue hashing of a message by consuming the next chunk of data.
-
-        passphrase_hash=sha1_factory.hexdigest()
-
-        return passphrase_hash #Return the printable digest of the message that has been hashed so far.
-
-
-
-
     def send_message():
         #ask for directory->returns name of directory
         choosen_directory=asksaveasfilename(defaultextension=".txt")

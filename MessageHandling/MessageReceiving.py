@@ -61,18 +61,16 @@ class AuthenticationReceiver(AbstractHandler):
     def handle(self,ciphertext,params):
 
         if "pua_mod" in ciphertext:
-            print("pua_mod")
+
             signature=ciphertext["signature"]
             PUa_mod=ciphertext["pua_mod"]
             msg=ciphertext["msg"]
-            print("pua2)")
 
-            #passphrase=askstring("Input", "Input an passphrase:")
-            print("pua3")
+
             publicRing: PublicKeyRing = PublicKeyRing.get_instance()
             publicData=None
 
-            print(PUa_mod)
+
             try:
                 publicData: PublicKeyData = publicRing.get_key(PUa_mod)  # id is PUa%2^64
             except Exception:
@@ -137,7 +135,7 @@ class EncryptionReciever(AbstractHandler):
             try:
                 passphrase=askstring("Input", "Input an passphrase:")
                 private_ring=PrivateKeyRing.get_instance()
-                print(hex(PUb_mod))
+
                 private_data=private_ring.get_key(hex(PUb_mod))
 
 
@@ -152,13 +150,15 @@ class EncryptionReciever(AbstractHandler):
             Ks=rsa_encr.decrypt(Ks)
 
             ciphertext=self.decrypt_message(msg,algoritham,(Ks,iv))
+
             try:
                 ciphertext=eval(ciphertext)
+                print("eval",ciphertext)
             except Exception:
-                messagebox.showinfo("Error","Message changed")
+                messagebox.showinfo("Error","Message changed.")
                 return
 
-            print(ciphertext)
+
             params_l["encryption_label"].config(text="Encryption ✓")
 
             return super().handle(ciphertext,params_l)
@@ -169,11 +169,9 @@ class EncryptionReciever(AbstractHandler):
 class RadixReceiver(AbstractHandler):
     def handle(self,ciphertext,params):
         if "radix" in ciphertext:
-            try:
-                ciphertext = eval(base64.b64decode(ciphertext["radix"].encode("ascii")).decode("ascii"))
-            except Exception:
-                messagebox.showinfo("Error","Message changed!")
-                return
+
+            ciphertext = eval(base64.b64decode(ciphertext["radix"].encode("ascii")).decode("ascii"))
+
             params["radix_label"].config(text="Radix64 ✓")
 
             return super().handle(ciphertext,params)
