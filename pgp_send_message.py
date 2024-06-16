@@ -1,23 +1,8 @@
-import base64
 import datetime
 import tkinter
-import zlib
-from tkinter import ttk, messagebox
-from tkinter.simpledialog import askinteger, askstring
 from tkinter import *
-from tkinter.filedialog import askopenfile
 
-from Cryptodome.Cipher import AES, DES3, PKCS1_OAEP
-from Cryptodome.Hash import SHA1
 from tkinter.filedialog import asksaveasfilename
-
-from Cryptodome.Random import get_random_bytes
-from Cryptodome.Signature import pkcs1_15
-from Cryptodome.Util.Padding import pad
-
-from keys import PrivateKeyRing, PrivateKeyData, PublicKeyRing
-
-from pprint import pprint
 
 from MessageHandling.MessageSending import *
 
@@ -91,9 +76,7 @@ def send_pgp_message_module_init():
             radix64_f=True
         text=text_area.get("1.0","end-1c")
 
-        print(PUa_mod,PUb,enc_algo,zip_f,radix64_f)
-        print(text)
-        print(choosen_directory)
+
         #wrapping message
 
         message={
@@ -102,7 +85,6 @@ def send_pgp_message_module_init():
             "file":choosen_directory
         }
 
-        print(message)
 
         sending_frame={
             "authentication_flag":authentication_flag,
@@ -124,7 +106,7 @@ def send_pgp_message_module_init():
         message=auth_sender.handle(message,params=sending_frame)
 
         with open(choosen_directory,"w") as file:
-            print(str(message))
+            #print(str(message))
             file.write(str(message))
 
         return

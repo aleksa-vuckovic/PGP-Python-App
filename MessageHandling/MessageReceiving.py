@@ -3,11 +3,11 @@ from abc import ABC, abstractmethod
 
 
 import base64
-import tkinter
+
 import zlib
-from tkinter import *
+
 from tkinter import messagebox
-from tkinter.filedialog import askopenfile
+
 from tkinter.simpledialog import askstring
 
 from Cryptodome.Cipher import AES, DES3, PKCS1_OAEP
@@ -153,7 +153,6 @@ class EncryptionReciever(AbstractHandler):
 
             try:
                 ciphertext=eval(ciphertext)
-                print("eval",ciphertext)
             except Exception:
                 messagebox.showinfo("Error","Message changed.")
                 return

@@ -2,17 +2,15 @@
 from abc import ABC, abstractmethod
 
 import base64
-import datetime
-import tkinter
+
 import zlib
 from tkinter import ttk, messagebox
 from tkinter.simpledialog import askinteger, askstring
-from tkinter import *
-from tkinter.filedialog import askopenfile
+
 
 from Cryptodome.Cipher import AES, DES3, PKCS1_OAEP
 from Cryptodome.Hash import SHA1
-from tkinter.filedialog import asksaveasfilename
+
 
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Signature import pkcs1_15
@@ -20,7 +18,6 @@ from Cryptodome.Util.Padding import pad
 
 from keys import PrivateKeyRing, PrivateKeyData, PublicKeyRing
 
-from pprint import pprint
 
 #interface
 class Handler(ABC):
@@ -47,7 +44,6 @@ class AbstractHandler(Handler):
         return handler
 
     def handle(self,request,params):
-        print(self._next_handler)
         if self._next_handler:
             return self._next_handler.handle(request,params)
         return request

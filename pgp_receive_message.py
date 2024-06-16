@@ -1,14 +1,8 @@
 import ast
-import base64
 import tkinter
-import zlib
-from tkinter import *
-from tkinter import messagebox
-from tkinter.filedialog import askopenfile
-from tkinter.simpledialog import askstring
 
-from Cryptodome.Cipher import AES, DES3, PKCS1_OAEP
-from Cryptodome.Util.Padding import unpad
+from tkinter import *
+from tkinter.filedialog import askopenfile
 
 from MessageHandling.MessageReceiving import *
 
@@ -76,7 +70,7 @@ def receive_message_frame_module_init():
     radix_label = tkinter.Label(receiving_message_frame, text="Radix-64", font=("Arial", 16))
     radix_label.place(x=550, y=50)
 
-    text_label = tkinter.Label(receiving_message_frame, text="Text", font=("Arial", 16))
+    text_label = tkinter.Label(receiving_message_frame, text="Text:", font=("Arial", 16))
     text_label.place(x=10, y=300)
 
     text_area = tkinter.Text(receiving_message_frame, height=5, width=100,state="disabled")
